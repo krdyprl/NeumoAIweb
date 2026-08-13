@@ -191,6 +191,18 @@ body {
 .anim-pulse-ring {
   animation: pulse-ring 2s cubic-bezier(0.66, 0, 0, 1) infinite;
 }
+@keyframes wave-bar {
+  0%,
+  100% {
+    transform: scaleY(0.2);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.anim-wave {
+  animation: wave-bar 0.8s ease-in-out infinite;
+}
 
 .glass {
   background: var(--glass);
