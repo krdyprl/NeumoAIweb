@@ -2,6 +2,7 @@ import type {
   AiExplain,
   AppNotification,
   DoctorProfile,
+  NavItem,
   Patient,
   ReportRow,
   RiskLevel,
@@ -148,4 +149,12 @@ export const REGION_REPORTS = [
   { region: "Puskesmas Sehat Sejahtera", total: 210 },
   { region: "Puskesmas Melati", total: 150 },
   { region: "Puskesmas Cinta Damai", total: 122 },
+]
+export const NAV_ITEMS: NavItem[] = [
+  { path: "/dashboard", label: "Dashboard", icon: "home" },
+  { path: "/patients", label: "Daftar Pasien", icon: "user" },
+  { path: "/decisions", label: "Keputusan Dokter", icon: "check" },
+  { path: "/notifications", label: "Notifikasi", icon: "bell" },
+  { path: "/reports", label: "Laporan", icon: "chart" },
+  { path: "/settings", label: "Pengaturan", icon: "edit" },
 ]
