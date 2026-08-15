@@ -2,11 +2,13 @@ import type {
   AiExplain,
   AppNotification,
   DoctorProfile,
+  Activity,
   NavItem,
   Patient,
   ReportRow,
   RiskLevel,
   Screening,
+  TaskItem,
 } from "../types"
 
 export const CURRENT_DOCTOR: DoctorProfile = {
@@ -42,30 +44,30 @@ export const PATIENTS: Patient[] = [
   { id: "p12", name: "Putri Maharani", nik: "3171010712240012", gender: "female", birthDate: "2024-12-07", address: "Jl. Lili No. 13, Jakarta", phone: "+62 812-1000-0012", facility: "Puskesmas Melati" },
 ]
 
-function screening(id: string, patientId: string, date: string, symptoms: string[], audioDuration: number, riskLevel: RiskLevel, confidence: number, status: Screening["status"], outcome = ""): Screening {
-  return { id, patientId, date, symptoms, audioDuration, riskLevel, disease: "Pneumonia", confidence, status, outcome }
+function screening(id: string, patientId: string, date: string, symptoms: string[], audioDuration: number, riskLevel: RiskLevel, confidence: number, status: Screening["status"], vitals: Screening["vitals"], outcome = "", trend: number[] = [], modelVersion = "v2.4"): Screening {
+  return { id, patientId, date, symptoms, audioDuration, riskLevel, disease: "Pneumonia", confidence, status, outcome, vitals, modelVersion, trend }
 }
 
 export const SCREENINGS_BY_PATIENT: Record<string, Screening[]> = {
   p1: [
-    screening("s1", "p1", "2026-08-01T09:14:00", ["batuk", "demam", "sesak"], 5, "high", 87, "awaiting"),
-    screening("s2", "p1", "2026-07-30T14:00:00", ["batuk", "pilek"], 4, "medium", 62, "done", "Tindak lanjut mandiri"),
-    screening("s3", "p1", "2026-03-20T10:00:00", ["batuk"], 3, "low", 18, "done", "Pulang"),
+    screening("s1", "p1", "2026-08-01T09:14:00", ["batuk", "demam", "sesak"], 5, "high", 87, "awaiting", { heartRate: 132, respiratoryRate: 46, spo2: 91, temperature: 38.6, weight: 13.2 }, "", [48, 55, 62, 71, 79, 87], "v2.4"),
+    screening("s2", "p1", "2026-07-30T14:00:00", ["batuk", "pilek"], 4, "medium", 62, "done", { heartRate: 124, respiratoryRate: 34, spo2: 95, temperature: 38.1, weight: 13.0 }, "Tindak lanjut mandiri", [40, 45, 50, 55, 58, 62], "v2.3"),
+    screening("s3", "p1", "2026-03-20T10:00:00", ["batuk"], 3, "low", 18, "done", { heartRate: 118, respiratoryRate: 28, spo2: 97, temperature: 37.0, weight: 12.8 }, "Pulang", [30, 26, 22, 20, 18, 18], "v2.2"),
   ],
-  p2: [screening("s4", "p2", "2026-07-10T08:30:00", ["demam", "batuk"], 4, "low", 22, "done", "Pulang")],
-  p3: [screening("s5", "p3", "2026-08-02T11:00:00", ["batuk", "sesak", "demam"], 6, "high", 91, "awaiting")],
+  p2: [screening("s4", "p2", "2026-07-10T08:30:00", ["demam", "batuk"], 4, "low", 22, "done", { heartRate: 126, respiratoryRate: 30, spo2: 98, temperature: 37.4, weight: 9.1 }, "Pulang", [20, 22, 24, 22, 21, 22], "v2.3")],
+  p3: [screening("s5", "p3", "2026-08-02T11:00:00", ["batuk", "sesak", "demam"], 6, "high", 91, "awaiting", { heartRate: 140, respiratoryRate: 50, spo2: 88, temperature: 39.1, weight: 21.0 }, "", [55, 63, 72, 80, 86, 91], "v2.4")],
   p4: [
-    screening("s6", "p4", "2026-07-25T09:00:00", ["batuk"], 3, "low", 15, "done", "Pulang"),
-    screening("s7", "p4", "2026-04-11T10:30:00", ["batuk", "demam"], 4, "medium", 55, "done", "Antibiotik"),
+    screening("s6", "p4", "2026-07-25T09:00:00", ["batuk"], 3, "low", 15, "done", { heartRate: 112, respiratoryRate: 24, spo2: 98, temperature: 36.9, weight: 24.5 }, "Pulang", [18, 20, 19, 16, 15, 15], "v2.3"),
+    screening("s7", "p4", "2026-04-11T10:30:00", ["batuk", "demam"], 4, "medium", 55, "done", { heartRate: 120, respiratoryRate: 32, spo2: 96, temperature: 38.0, weight: 24.2 }, "Antibiotik", [35, 42, 48, 50, 53, 55], "v2.2"),
   ],
-  p5: [screening("s8", "p5", "2026-08-03T13:00:00", ["sesak", "batuk"], 5, "high", 84, "awaiting")],
-  p6: [screening("s9", "p6", "2026-06-18T08:00:00", ["batuk", "pilek"], 3, "low", 12, "done", "Pulang")],
-  p7: [screening("s10", "p7", "2026-07-28T14:30:00", ["demam"], 3, "medium", 48, "awaiting")],
-  p8: [screening("s11", "p8", "2026-05-02T09:45:00", ["batuk", "sesak"], 4, "high", 79, "done", "Rujuk RS")],
-  p9: [screening("s12", "p9", "2026-02-14T10:00:00", ["batuk"], 3, "low", 10, "done", "Pulang")],
-  p10: [screening("s13", "p10", "2026-07-05T08:15:00", ["demam", "sesak"], 4, "medium", 58, "done", "Tindak lanjut mandiri")],
-  p11: [screening("s14", "p11", "2026-01-22T11:30:00", ["batuk", "demam"], 5, "medium", 52, "done", "Antibiotik")],
-  p12: [screening("s15", "p12", "2026-08-04T08:45:00", ["batuk", "pilek"], 4, "low", 25, "awaiting")],
+  p5: [screening("s8", "p5", "2026-08-03T13:00:00", ["sesak", "batuk"], 5, "high", 84, "awaiting", { heartRate: 135, respiratoryRate: 44, spo2: 90, temperature: 38.8, weight: 18.6 }, "", [40, 48, 58, 68, 76, 84], "v2.4")],
+  p6: [screening("s9", "p6", "2026-06-18T08:00:00", ["batuk", "pilek"], 3, "low", 12, "done", { heartRate: 108, respiratoryRate: 22, spo2: 99, temperature: 36.8, weight: 14.0 }, "Pulang", [14, 15, 13, 12, 11, 12], "v2.3")],
+  p7: [screening("s10", "p7", "2026-07-28T14:30:00", ["demam"], 3, "medium", 48, "awaiting", { heartRate: 122, respiratoryRate: 30, spo2: 96, temperature: 38.2, weight: 16.4 }, "", [20, 26, 32, 38, 43, 48], "v2.4")],
+  p8: [screening("s11", "p8", "2026-05-02T09:45:00", ["batuk", "sesak"], 4, "high", 79, "done", { heartRate: 128, respiratoryRate: 40, spo2: 92, temperature: 38.5, weight: 20.3 }, "Rujuk RS", [30, 40, 52, 62, 71, 79], "v2.3")],
+  p9: [screening("s12", "p9", "2026-02-14T10:00:00", ["batuk"], 3, "low", 10, "done", { heartRate: 102, respiratoryRate: 20, spo2: 99, temperature: 36.7, weight: 28.0 }, "Pulang", [12, 13, 11, 10, 9, 10], "v2.2")],
+  p10: [screening("s13", "p10", "2026-07-05T08:15:00", ["demam", "sesak"], 4, "medium", 58, "done", { heartRate: 125, respiratoryRate: 34, spo2: 95, temperature: 38.0, weight: 11.8 }, "Tindak lanjut mandiri", [30, 36, 42, 48, 53, 58], "v2.3")],
+  p11: [screening("s14", "p11", "2026-01-22T11:30:00", ["batuk", "demam"], 5, "medium", 52, "done", { heartRate: 121, respiratoryRate: 32, spo2: 96, temperature: 37.9, weight: 30.1 }, "Antibiotik", [28, 34, 40, 44, 49, 52], "v2.2")],
+  p12: [screening("s15", "p12", "2026-08-04T08:45:00", ["batuk", "pilek"], 4, "low", 25, "awaiting", { heartRate: 110, respiratoryRate: 26, spo2: 97, temperature: 37.2, weight: 5.4 }, "", [16, 18, 20, 21, 23, 25], "v2.4")],
 }
 
 function makeAiExplain(id: string, confidence: number): AiExplain {
@@ -98,11 +100,11 @@ function makeAiExplain(id: string, confidence: number): AiExplain {
     melGrid,
     gradCam,
     shap: [
-      { feature: "Durasi inspirasi", contribution: 0.42 },
-      { feature: "Bunyi ronki basah", contribution: 0.31 },
-      { feature: "Frekuensi dasar", contribution: 0.16 },
-      { feature: "Ampiltudo sinyal", contribution: 0.08 },
-      { feature: "Rasio H/N", contribution: -0.05 },
+      { feature: "Durasi inspirasi", contribution: 42 },
+      { feature: "Bunyi ronki basah", contribution: 31 },
+      { feature: "Frekuensi dasar", contribution: 16 },
+      { feature: "Amplitudo sinyal", contribution: 8 },
+      { feature: "Rasio H/N", contribution: -5 },
     ],
   }
 }
@@ -122,13 +124,27 @@ export const NOTIFICATIONS: AppNotification[] = [
   { id: "n5", type: "patient", title: "Jadwal rujukan", body: "Rujukan RS untuk Intan Permatasari dikonfirmasi.", time: "Kemarin", read: true },
 ]
 
+export const ACTIVITIES: Activity[] = [
+  { id: "a1", type: "ai", title: "Skrining AI selesai", body: "Arya Putra · Pneumonia · confidence 87%", time: "5 menit lalu", icon: "🧠", patientId: "p1" },
+  { id: "a2", type: "patient", title: "Skrining baru", body: "Putri Maharani · menunggu tinjauan", time: "1 jam lalu", icon: "👶", patientId: "p12" },
+  { id: "a3", type: "report", title: "Laporan mingguan dikirim", body: "Laporan 10-16 Agu terkirim ke Puskesmas Melati", time: "3 jam lalu", icon: "📊" },
+  { id: "a4", type: "system", title: "Model AI diperbarui", body: "Model v2.4 aktif untuk semua skrining baru", time: "3 jam lalu", icon: "⚙️" },
+  { id: "a5", type: "ai", title: "Skrining AI selesai", body: "Raka Saputra · Pneumonia · confidence 91%", time: "Kemarin", icon: "🧠", patientId: "p3" },
+]
+
+export const TASKS: TaskItem[] = [
+  { id: "t1", title: "Tinjau keputusan", body: "3 skrining menunggu keputusan dokter", priority: "high", patientId: "p1" },
+  { id: "t2", title: "Konfirmasi rujukan", body: "Rujukan RS untuk Intan Permatasari", priority: "medium", patientId: "p8" },
+  { id: "t3", title: "Tindak lanjut pasien", body: "Anya Putri dijadwalkan ulang pemeriksaan", priority: "low", patientId: "p2" },
+]
+
 export const REPORTS: ReportRow[] = [
-  { id: "r1", patientName: "Arya Putra", date: "2026-08-01", riskLevel: "high", confidence: 87, status: "Menunggu keputusan" },
-  { id: "r2", patientName: "Raka Saputra", date: "2026-08-02", riskLevel: "high", confidence: 91, status: "Menunggu keputusan" },
-  { id: "r3", patientName: "Bima Nugroho", date: "2026-08-03", riskLevel: "high", confidence: 84, status: "Menunggu keputusan" },
-  { id: "r4", patientName: "Anya Putri", date: "2026-07-10", riskLevel: "low", confidence: 22, status: "Selesai" },
-  { id: "r5", patientName: "Siti Rahma", date: "2026-07-25", riskLevel: "low", confidence: 15, status: "Selesai" },
-  { id: "r6", patientName: "Fajar Hidayat", date: "2026-07-28", riskLevel: "medium", confidence: 48, status: "Menunggu keputusan" },
+  { id: "r1", patientName: "Arya Putra", date: "2026-08-01", riskLevel: "high", confidence: 87, status: "Menunggu keputusan", modelVersion: "v2.4", reviewer: "-" },
+  { id: "r2", patientName: "Raka Saputra", date: "2026-08-02", riskLevel: "high", confidence: 91, status: "Menunggu keputusan", modelVersion: "v2.4", reviewer: "-" },
+  { id: "r3", patientName: "Bima Nugroho", date: "2026-08-03", riskLevel: "high", confidence: 84, status: "Menunggu keputusan", modelVersion: "v2.4", reviewer: "-" },
+  { id: "r4", patientName: "Anya Putri", date: "2026-07-10", riskLevel: "low", confidence: 22, status: "Selesai", modelVersion: "v2.3", reviewer: "dr. Ayu Lestari" },
+  { id: "r5", patientName: "Siti Rahma", date: "2026-07-25", riskLevel: "low", confidence: 15, status: "Selesai", modelVersion: "v2.3", reviewer: "dr. Budi Santoso" },
+  { id: "r6", patientName: "Fajar Hidayat", date: "2026-07-28", riskLevel: "medium", confidence: 48, status: "Menunggu keputusan", modelVersion: "v2.4", reviewer: "-" },
 ]
 
 export const WEEKLY_SCREENINGS = [12, 18, 15, 22, 19, 25, 30]

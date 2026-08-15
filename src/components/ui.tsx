@@ -387,3 +387,56 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
     </button>
   )
 }
+
+// ─── Sparkline ─────────────────────────────────────────────────────────────────
+
+export function Sparkline({
+  data,
+  width = 96,
+  height = 28,
+  positive = true,
+  className = "",
+}: {
+  data: number[]
+  width?: number
+  height?: number
+  positive?: boolean
+  className?: string
+}) {
+  if (!data.length) return <span className={className} />
+  const min = Math.min(...data)
+  const max = Math.max(...data)
+  const range = max - min || 1
+  const pts = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * (width - 2) + 1
+    const y = height - 2 - ((v - min) / range) * (height - 4)
+    return [x, y] as const
+  })
+  const line = pts.map((p) => `${p[0]},${p[1]}`).join(" ")
+  const color = positive ? "var(--color-secondary)" : "var(--color-danger)"
+  const fill = `${pts.map((p) => `${p[0]},${p[1]}`).join(" ")} ${width},${height} 0,${height}`
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className={className} preserveAspectRatio="none" aria-hidden>
+      <polygon points={fill} fill={color} opacity="0.12" />
+      <polyline points={line} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// ─── DeltaBadge ────────────────────────────────────────────────────────────────
+
+export function DeltaBadge({ value }: { value: number }) {
+  const up = value >= 0
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
+        up ? "bg-secondary/15 text-secondary" : "bg-danger/15 text-danger"
+      }`}
+    >
+      <svg viewBox="0 0 12 12" className={`w-2.5 h-2.5 ${up ? "" : "rotate-180"}`} aria-hidden>
+        <path d="M6 2l4 6H2z" fill="currentColor" />
+      </svg>
+      {Math.abs(value)}%
+    </span>
+  )
+}

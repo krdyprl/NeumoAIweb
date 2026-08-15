@@ -26,6 +26,14 @@ export interface Patient {
   facility: string
 }
 
+export interface Vitals {
+  heartRate: number
+  respiratoryRate: number
+  spo2: number
+  temperature: number
+  weight: number
+}
+
 export interface Screening {
   id: string
   patientId: string
@@ -37,6 +45,27 @@ export interface Screening {
   confidence: number
   status: "awaiting" | "accepted" | "rejected" | "done"
   outcome?: string
+  vitals: Vitals
+  modelVersion: string
+  trend: number[]
+}
+
+export interface Activity {
+  id: string
+  type: "ai" | "patient" | "system" | "report"
+  title: string
+  body: string
+  time: string
+  icon: string
+  patientId?: string
+}
+
+export interface TaskItem {
+  id: string
+  title: string
+  body: string
+  priority: "high" | "medium" | "low"
+  patientId?: string
 }
 
 export interface AiExplain {
@@ -65,6 +94,8 @@ export interface ReportRow {
   riskLevel: RiskLevel
   confidence: number
   status: string
+  modelVersion: string
+  reviewer: string
 }
 
 export interface NavItem {

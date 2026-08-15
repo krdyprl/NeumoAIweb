@@ -312,6 +312,104 @@ const dict: Record<string, { id: string; en: string }> = {
     en: "The page you are looking for is unavailable or has been moved.",
   },
   "btn.back_dashboard": { id: "Kembali ke Dashboard", en: "Back to Dashboard" },
+
+  // Vitals
+  "vitals.title": { id: "Tanda Vital Terbaru", en: "Latest Vitals" },
+  "vitals.subtitle": {
+    id: "Pengukuran pada skrining terakhir",
+    en: "Measurements from the latest screening",
+  },
+  "vitals.hr": { id: "Denyut Jantung", en: "Heart Rate" },
+  "vitals.rr": { id: "Laju Napas", en: "Respiratory Rate" },
+  "vitals.spo2": { id: "SpO₂", en: "SpO₂" },
+  "vitals.temp": { id: "Suhu", en: "Temperature" },
+  "vitals.weight": { id: "Berat Badan", en: "Weight" },
+  "vitals.bpm": { id: "bpm", en: "bpm" },
+  "vitals.brpm": { id: "napas/mnt", en: "breaths/min" },
+  "vitals.sat": { id: "sat", en: "sat" },
+  "vitals.c": { id: "°C", en: "°C" },
+  "vitals.kg": { id: "kg", en: "kg" },
+  "vitals.baseline": { id: "Vs Baseline Normal", en: "vs Normal Baseline" },
+  "vitals.baseline_desc": {
+    id: "Perbandingan parameter dengan kisaran normal anak.",
+    en: "Comparison of parameters against pediatric normal ranges.",
+  },
+  "vitals.in_range": { id: "Dalam rentang", en: "In range" },
+  "vitals.out_of_range": { id: "Di luar rentang", en: "Out of range" },
+
+  // AI Detail
+  "ai.timeline": { id: "Timeline Prediksi", en: "Prediction Timeline" },
+  "ai.timeline_desc": {
+    id: "Perkembangan confidence dari riwayat skrining.",
+    en: "Confidence progression across screening history.",
+  },
+  "ai.model_version": { id: "Versi Model", en: "Model Version" },
+  "ai.recorded": { id: "Direkam", en: "Recorded" },
+
+  // Activity / Tasks (dashboard)
+  "panel.activity": { id: "Aktivitas Terkini", en: "Recent Activity" },
+  "panel.tasks": { id: "Tugas Anda", en: "Your Tasks" },
+  "task.see_all": { id: "Lihat semua tugas", en: "View all tasks" },
+  "activity.today": { id: "Hari ini", en: "Today" },
+
+  // Dashboard extras
+  "kpi.accuracy": { id: "Akurasi AI", en: "AI Accuracy" },
+  "kpi.referrals_count": { id: "Rujukan RS", en: "Hospital Referrals" },
+  "kpi.trend_up": { id: "naik", en: "up" },
+  "kpi.trend_down": { id: "turun", en: "down" },
+  "kpi.vs_last_week": { id: "vs minggu lalu", en: "vs last week" },
+
+  // Patients extras
+  "patients.risk_trend": { id: "Tren Risiko", en: "Risk Trend" },
+  "filter.referrals": { id: "Rujukan", en: "Referrals" },
+
+  // Decisions extras
+  "decision.reason": { id: "Alasan Keputusan", en: "Decision Reason" },
+  "decision.reason_required": {
+    id: "Alasan wajib diisi untuk keperluan audit.",
+    en: "Reason is required for audit purposes.",
+  },
+  "decision.reason_placeholder": {
+    id: "Tuliskan alasan keputusan Anda...",
+    en: "Write your decision reason...",
+  },
+  "decision.pending_count": {
+    id: "kasus menunggu",
+    en: "cases awaiting",
+  },
+  "decision.spectrogram": { id: "Pratinjau Spektrogram", en: "Spectrogram Preview" },
+
+  // Notifications extras
+  "notif.today": { id: "Hari ini", en: "Today" },
+  "notif.yesterday": { id: "Kemarin", en: "Yesterday" },
+  "notif.week": { id: "Minggu ini", en: "This Week" },
+  "notif.open": { id: "Buka", en: "Open" },
+
+  // Reports extras
+  "reports.export_csv": { id: "Ekspor CSV", en: "Export CSV" },
+  "reports.drilldown": {
+    id: "Perincian per Wilayah",
+    en: "Region Breakdown",
+  },
+  "reports.date_range": { id: "Rentang Tanggal", en: "Date Range" },
+  "table.confidence": { id: "Confidence", en: "Confidence" },
+  "table.model_version": { id: "Versi Model", en: "Model Version" },
+  "table.reviewer": { id: "Peninjau", en: "Reviewer" },
+
+  // Settings extras
+  "settings.security": { id: "Keamanan", en: "Security" },
+  "settings.2fa": { id: "Autentikasi Dua Faktor", en: "Two-Factor Authentication" },
+  "settings.2fa_desc": {
+    id: "Tambah lapisan keamanan ekstra saat masuk.",
+    en: "Add an extra layer of security when signing in.",
+  },
+  "settings.notif_pref": {
+    id: "Preferensi Notifikasi",
+    en: "Notification Preferences",
+  },
+  "settings.devices": { id: "Perangkat Terhubung", en: "Linked Devices" },
+  "settings.device_now": { id: "Perangkat saat ini", en: "Current device" },
+  "settings.device_last_seen": { id: "terakhir aktif", en: "last active" },
 }
 
 export function useT() {

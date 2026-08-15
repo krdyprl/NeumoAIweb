@@ -4,6 +4,7 @@ import { useT } from "../i18n"
 import { PageHeader, RiskBadge, StatCard } from "../components/dashboard"
 import { BarChart } from "../components/charts"
 import { Button, Card, Chip, Field } from "../components/ui"
+import { downloadCsv } from "../utils/format"
 
 export function ReportsScreen() {
   const t = useT()
@@ -17,9 +18,18 @@ export function ReportsScreen() {
     setTimeout(() => setToast(""), 3000)
   }
 
+  function exportCsv() {
+    downloadCsv("neumoai-laporan.csv", [
+      [t("table.patient"), t("table.date"), t("table.risk"), t("table.confidence"), t("table.model_version"), t("table.reviewer"), t("table.status")],
+      ...REPORTS.map((r) => [r.patientName, r.date, r.riskLevel, `${r.confidence}%`, r.modelVersion, r.reviewer, r.status]),
+    ])
+    setToast("CSV " + t("toast_export").replace("{kind}", "").trim())
+    setTimeout(() => setToast(""), 3000)
+  }
+
   return (
     <div className="p-6 max-w-[1280px] mx-auto anim-fade-up">
-      <PageHeader title={t("page.reports")} subtitle={t("reports_subtitle")} actions={<><Button variant="outline" onClick={() => fakeExport("PDF")}>{t("btn.export_pdf")}</Button><Button onClick={() => fakeExport("Excel")}>{t("btn.export_excel")}</Button></>} />
+      <PageHeader title={t("page.reports")} subtitle={t("reports_subtitle")} actions={<><Button variant="outline" onClick={() => fakeExport("PDF")}>{t("btn.export_pdf")}</Button><Button variant="outline" onClick={() => fakeExport("Excel")}>{t("btn.export_excel")}</Button><Button onClick={exportCsv}>{t("reports.export_csv")}</Button></>} />
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         <StatCard icon="chart" label={t("kpi.total_screenings")} value={REPORTS.length} tone="primary" />
         <StatCard icon="warning" label={t("kpi.pneumonia_flagged")} value={total} tone="danger" />
@@ -28,7 +38,7 @@ export function ReportsScreen() {
       </div>
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
         <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("chart.screenings_monthly")}</h2><BarChart data={MONTHLY_REPORTS.map((m) => ({ label: m.month, value: m.total }))} /></Card>
-        <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("chart.screenings_region")}</h2><BarChart data={REGION_REPORTS.map((r) => ({ label: r.region, value: r.total }))} /></Card>
+        <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("reports.drilldown")}</h2><BarChart data={REGION_REPORTS.map((r) => ({ label: r.region, value: r.total }))} /></Card>
       </div>
       <div className="flex flex-col md:flex-row gap-3 mb-5">
         <Field label={t("field_from")} value="2026-01-01" onChange={() => {}} />
@@ -43,6 +53,8 @@ export function ReportsScreen() {
                 <th className="px-5 py-3 font-semibold">{t("table.date")}</th>
                 <th className="px-5 py-3 font-semibold">{t("table.risk")}</th>
                 <th className="px-5 py-3 font-semibold">{t("ai_confidence")}</th>
+                <th className="px-5 py-3 font-semibold">{t("table.model_version")}</th>
+                <th className="px-5 py-3 font-semibold hidden lg:table-cell">{t("table.reviewer")}</th>
                 <th className="px-5 py-3 font-semibold">{t("table.status")}</th>
               </tr>
             </thead>
@@ -53,6 +65,8 @@ export function ReportsScreen() {
                   <td className="px-5 py-3 text-muted text-[13px]">{new Date(r.date).toLocaleDateString("id-ID")}</td>
                   <td className="px-5 py-3"><RiskBadge level={r.riskLevel} /></td>
                   <td className="px-5 py-3 text-[13px] text-muted">{r.confidence}%</td>
+                  <td className="px-5 py-3 text-[13px] text-muted">{r.modelVersion}</td>
+                  <td className="px-5 py-3 text-[13px] text-muted hidden lg:table-cell">{r.reviewer}</td>
                   <td className="px-5 py-3"><Chip tone={r.status.includes("Menunggu") ? "accent" : "secondary"}>{r.status}</Chip></td>
                 </tr>
               ))}

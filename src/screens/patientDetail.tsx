@@ -4,17 +4,20 @@ import { PATIENTS, SCREENINGS_BY_PATIENT, AI_EXPLAIN } from "../data/doctorMock"
 import { useT } from "../i18n"
 import { RiskBadge, EmptyState } from "../components/dashboard"
 import { MelSpectrogram, GradCam, ShapBars, WaveformPlayer } from "../components/charts"
-import { Button, Card, Chip, Avatar, Icon, Segmented } from "../components/ui"
+import { Button, Card, Chip, Avatar, Icon, Segmented, Sparkline } from "../components/ui"
+
+type TabValue = "history" | "ai" | "medical" | "vitals"
 
 export function PatientDetailScreen() {
   const { id } = useParams()
   const navigate = useNavigate()
   const t = useT()
-  const [tab, setTab] = useState<"history" | "ai" | "medical">("ai")
+  const [tab, setTab] = useState<TabValue>("ai")
 
-  const TABS: { value: "history" | "ai" | "medical"; label: string }[] = [
+  const TABS: { value: TabValue; label: string }[] = [
     { value: "history", label: t("tab.history") },
     { value: "ai", label: t("tab.ai") },
+    { value: "vitals", label: t("vitals.title") },
     { value: "medical", label: t("tab.medical") },
   ]
 
@@ -66,6 +69,53 @@ export function PatientDetailScreen() {
         </div>
       )}
 
+      {tab === "vitals" && latest && (
+        <div className="space-y-6">
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-[16px] font-bold text-ink">{t("vitals.title")}</h2>
+                <p className="text-[13px] text-muted">{t("vitals.subtitle")}</p>
+              </div>
+              <RiskBadge level={latest.riskLevel} />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {[
+                { label: t("vitals.hr"), value: `${latest.vitals.heartRate}`, unit: t("vitals.bpm") },
+                { label: t("vitals.rr"), value: `${latest.vitals.respiratoryRate}`, unit: t("vitals.brpm") },
+                { label: t("vitals.spo2"), value: `${latest.vitals.spo2}`, unit: t("vitals.sat") },
+                { label: t("vitals.temp"), value: latest.vitals.temperature.toFixed(1), unit: t("vitals.c") },
+                { label: t("vitals.weight"), value: latest.vitals.weight.toFixed(1), unit: t("vitals.kg") },
+              ].map((v) => (
+                <div key={v.label} className="p-4 rounded-2xl bg-surface-2">
+                  <p className="text-[12px] text-muted">{v.label}</p>
+                  <p className="text-[22px] font-extrabold text-ink leading-tight mt-1">
+                    {v.value}
+                    <span className="text-[12px] font-semibold text-muted ml-1">{v.unit}</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <h2 className="text-[16px] font-bold text-ink mb-1">{t("ai.timeline")}</h2>
+            <p className="text-[13px] text-muted mb-4">{t("ai.timeline_desc")}</p>
+            <div className="flex items-end gap-2 h-32">
+              {latest.trend.map((v, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+                  <span className="text-[10px] font-semibold text-muted">{v}%</span>
+                  <div
+                    className="w-full rounded-t-lg bg-gradient-to-t from-primary/40 to-primary"
+                    style={{ height: `${v}%`, minHeight: "6px" }}
+                  />
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
+
       {tab === "ai" && (
         <div className="space-y-6">
           <div className="p-4 bg-danger-soft border border-danger/20 rounded-2xl text-[13px] text-danger-deep font-medium">⚠️ {t("ai_disclaimer")}</div>
@@ -73,6 +123,10 @@ export function PatientDetailScreen() {
             <>
               <Card className="p-6">
                 <h2 className="text-[16px] font-bold text-ink mb-4">{t("ai_summary")}</h2>
+                <div className="flex flex-wrap items-start gap-2 mb-4 text-[12px] text-muted">
+                  <Chip tone="secondary">{latest.modelVersion}</Chip>
+                  <span>{t("ai.recorded")}: {new Date(latest.date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div><p className="text-[12px] text-muted">{t("ai_disease")}</p><p className="text-[15px] font-bold text-ink">{latest.disease}</p></div>
                   <div><p className="text-[12px] text-muted">{t("ai_confidence")}</p><p className="text-[15px] font-bold text-ink">{latest.confidence}%</p></div>
@@ -87,6 +141,11 @@ export function PatientDetailScreen() {
                     <ul className="space-y-2">{explain.reasoning.map((r, i) => (<li key={i} className="flex gap-2 text-[14px] text-muted"><Icon name="check" className="w-4 h-4 text-secondary shrink-0" />{r}</li>))}</ul>
                   </Card>
                   <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("ai_playback")}</h2><WaveformPlayer duration={latest.audioDuration} /></Card>
+                  <Card className="p-6">
+                    <h2 className="text-[16px] font-bold text-ink mb-1">{t("ai.timeline")}</h2>
+                    <p className="text-[13px] text-muted mb-4">{t("ai.timeline_desc")}</p>
+                    <Sparkline data={latest.trend} width={260} height={60} positive className="w-full h-16" />
+                  </Card>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("ai_mel")}</h2><MelSpectrogram grid={explain.melGrid} /><p className="text-[12px] text-muted mt-2">{t("ai_mel_desc")}</p></Card>
                     <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("ai_gradcam")}</h2><GradCam points={explain.gradCam} /><p className="text-[12px] text-muted mt-2">{t("ai_gradcam_desc")}</p></Card>

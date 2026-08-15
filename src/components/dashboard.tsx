@@ -1,24 +1,30 @@
 import type { ReactNode } from "react"
 import type { RiskLevel } from "../types"
 import { RISK_LABEL } from "../data/doctorMock"
+import { Sparkline, DeltaBadge } from "./ui"
 
-export function StatCard({ icon, label, value, sub, tone = "primary" }: { icon: string; label: string; value: string | number; sub?: string; tone?: "primary" | "secondary" | "accent" | "danger" }) {
+export function StatCard({ icon, label, value, sub, tone = "primary", trend, delta }: { icon: string; label: string; value: string | number; sub?: string; tone?: "primary" | "secondary" | "accent" | "danger"; trend?: number[]; delta?: number }) {
   const tones: Record<string, string> = {
     primary: "bg-primary-soft text-primary",
     secondary: "bg-secondary-soft text-secondary-deep",
     accent: "bg-accent-soft text-accent-deep",
     danger: "bg-danger-soft text-danger-deep",
   }
+  const trendPositive = trend ? trend[trend.length - 1] >= trend[0] : true
   return (
-    <div className="bg-surface border border-line rounded-3xl card-shadow p-5">
-      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center mb-3 ${tones[tone]}`}>
-        <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" aria-hidden>
-          <path d={icon === "chart" ? "M3 3v18h18M8 17v-6m4 6V7m4 10v-3" : icon === "user" ? "M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm-7 9a7 7 0 0 1 14 0H5Z" : icon === "warning" ? "M12 3 1.5 20h21L12 3Zm0 6v5m0 3v.5" : icon === "clock" ? "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 5v5l3.5 2" : "M12 3a6 6 0 0 0-6 6c0 4-1.5 5.5-2.5 6.5h17C19.5 14.5 18 13 18 9a6 6 0 0 0-6-6Z"} />
-        </svg>
+    <div className="bg-surface border border-line rounded-3xl card-shadow p-5 flex flex-col">
+      <div className="flex items-start justify-between">
+        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${tones[tone]}`}>
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" aria-hidden>
+            <path d={icon === "chart" ? "M3 3v18h18M8 17v-6m4 6V7m4 10v-3" : icon === "user" ? "M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm-7 9a7 7 0 0 1 14 0H5Z" : icon === "warning" ? "M12 3 1.5 20h21L12 3Zm0 6v5m0 3v.5" : icon === "clock" ? "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 5v5l3.5 2" : icon === "bell" ? "M12 3a6 6 0 0 0-6 6c0 4-1.5 5.5-2.5 6.5h17C19.5 14.5 18 13 18 9a6 6 0 0 0-6-6Z" : "M12 3a6 6 0 0 0-6 6c0 4-1.5 5.5-2.5 6.5h17C19.5 14.5 18 13 18 9a6 6 0 0 0-6-6Z"} />
+          </svg>
+        </div>
+        {delta !== undefined && <DeltaBadge value={delta} />}
       </div>
-      <p className="text-[13px] text-muted font-medium">{label}</p>
+      <p className="text-[13px] text-muted font-medium mt-3">{label}</p>
       <p className="text-[28px] font-extrabold text-ink leading-tight mt-0.5">{value}</p>
       {sub && <p className="text-[12px] text-faint mt-1">{sub}</p>}
+      {trend && trend.length > 0 && <Sparkline data={trend} positive={trendPositive} className="mt-3 w-full h-8" />}
     </div>
   )
 }

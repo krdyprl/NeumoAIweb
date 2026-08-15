@@ -4,7 +4,7 @@ import { useApp } from "../state/AppContext"
 import { PATIENTS, SCREENINGS_BY_PATIENT } from "../data/doctorMock"
 import { useT } from "../i18n"
 import { PageHeader, SearchBar, FilterChips, RiskBadge, EmptyState } from "../components/dashboard"
-import { Card, Avatar, Icon } from "../components/ui"
+import { Card, Avatar, Icon, Sparkline } from "../components/ui"
 
 export function PatientsScreen() {
   const navigate = useNavigate()
@@ -50,6 +50,7 @@ export function PatientsScreen() {
                   <th className="px-5 py-3 font-semibold hidden md:table-cell">{t("table.nik")}</th>
                   <th className="px-5 py-3 font-semibold hidden lg:table-cell">{t("table.age_gender")}</th>
                   <th className="px-5 py-3 font-semibold hidden lg:table-cell">{t("table.result")}</th>
+                  <th className="px-5 py-3 font-semibold hidden xl:table-cell">{t("patients.risk_trend")}</th>
                   <th className="px-5 py-3 font-semibold">{t("table.risk")}</th>
                   <th className="px-5 py-3 font-semibold hidden sm:table-cell">{t("table.date")}</th>
                   <th className="px-5 py-3 font-semibold">{t("table.action")}</th>
@@ -66,6 +67,7 @@ export function PatientsScreen() {
                       <td className="px-5 py-3 text-muted text-[13px] hidden md:table-cell">{patient.nik}</td>
                       <td className="px-5 py-3 text-[13px] text-muted hidden lg:table-cell">{ageY} {t("age_yr")} {ageM} {t("age_mo")} · {patient.gender === "male" ? t("sex_male") : t("sex_female")}</td>
                       <td className="px-5 py-3 text-[13px] text-muted hidden lg:table-cell">{latest ? `${latest.disease} · ${latest.confidence}%` : t("table.not_available")}</td>
+                      <td className="px-5 py-3 hidden xl:table-cell">{latest && latest.trend.length > 0 ? <Sparkline data={latest.trend} positive={latest.trend[latest.trend.length - 1] >= latest.trend[0]} className="w-24 h-8" /> : <span className="text-[12px] text-faint">{t("table.not_available")}</span>}</td>
                       <td className="px-5 py-3">{latest ? <RiskBadge level={latest.riskLevel} /> : <span className="text-[12px] text-faint">{t("table.no_data")}</span>}</td>
                       <td className="px-5 py-3 text-[13px] text-muted hidden sm:table-cell">{latest ? new Date(latest.date).toLocaleDateString("id-ID") : t("table.not_available")}</td>
                       <td className="px-5 py-3"><button onClick={() => navigate(`/patients/${patient.id}`)} className="inline-flex items-center gap-1 text-[13px] font-semibold text-primary hover:underline cursor-pointer">{t("table.detail")} <Icon name="chevron" className="w-4 h-4" /></button></td>

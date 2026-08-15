@@ -194,6 +194,19 @@ body {
   animation: wave-bar 0.8s ease-in-out infinite;
 }
 
+@keyframes grow-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.anim-grow {
+  animation: grow-bar 0.6s ease-out both;
+  transform-origin: var(--grow-origin, left);
+}
+
 .glass {
   background: var(--glass);
   border: 1px solid var(--glass-border);

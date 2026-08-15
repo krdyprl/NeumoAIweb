@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { formatTime } from "../utils/format"
 
 export function BarChart({ data }: { data: { label: string; value: number }[] }) {
   const max = Math.max(...data.map((d) => d.value), 1)
@@ -67,63 +68,146 @@ export function MelSpectrogram({ grid }: { grid: number[][] }) {
   if (!grid.length || !grid[0].length) return <p className="text-[13px] text-muted">Data tidak tersedia.</p>
   const rows = grid.length
   const cols = grid[0].length
-  const colors = ["#1d3a6e", "#1d7afc", "#3ecf8e", "#ffd166", "#ff8a00", "#ef4444"]
+  const colors = ["#1d3a6e", "#1d7afc", "#2fa8f0", "#3ecf8e", "#ffd166", "#ff8a00", "#ef4444"]
   function colorFor(v: number) {
     return colors[Math.max(0, Math.min(colors.length - 1, Math.floor(v * (colors.length - 1))))]
   }
   return (
-    <svg viewBox={`0 0 ${cols} ${rows}`} className="w-full h-48 rounded-xl" preserveAspectRatio="none">
-      {grid.map((row, r) =>
-        row.map((v, c) => <rect key={`${r}-${c}`} x={c} y={r} width={1} height={1} fill={colorFor(v)} />),
-      )}
-    </svg>
+    <div>
+      <svg viewBox={`0 0 ${cols} ${rows}`} className="h-44 w-full rounded-lg" preserveAspectRatio="none">
+        {grid.map((row, r) =>
+          row.map((v, c) => <rect key={`${r}-${c}`} x={c + 0.25} y={r + 0.25} width={0.5} height={0.5} fill={colorFor(v)} />),
+        )}
+      </svg>
+      <svg viewBox={`0 0 100 24`} className="w-full h-4" preserveAspectRatio="none" aria-hidden>
+        <defs>
+          <linearGradient id="mel-scale" x1="0" y1="0" x2="1" y2="0">
+            {colors.map((c, i) => (
+              <stop key={i} offset={`${(i / (colors.length - 1)) * 100}%`} stopColor={c} />
+            ))}
+          </linearGradient>
+        </defs>
+        <rect x="0" y="4" width="100" height="10" fill="url(#mel-scale)" rx="2" />
+      </svg>
+    </div>
   )
 }
 
 export function GradCam({ points }: { points: { x: number; y: number; intensity: number }[] }) {
-  const line = points.map((p) => `${p.x},${p.y}`).join(" ")
+  const w = 200
+  const h = 120
+  const pad = 6
+  if (!points.length) return <p className="text-[13px] text-muted">Data tidak tersedia.</p>
+  // Build a smooth path through the points (baseline wave)
+  const line = points.map((p, i) => `${i === 0 ? "M" : "L"}${pad + (p.x / 100) * (w - pad * 2)},${pad + (p.y / 100) * (h - pad * 2)}`).join(" ")
+  const maxI = Math.max(...points.map((p) => p.intensity))
   return (
-    <svg viewBox="0 0 100 100" className="w-full h-40 rounded-xl" preserveAspectRatio="none">
-      <polyline points={line} fill="none" stroke="var(--color-ink)" strokeWidth="1.5" />
-      {points.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={3 + p.intensity * 6} fill="var(--color-danger)" opacity={0.15 + p.intensity * 0.4} />
-      ))}
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-44 rounded-xl border border-line/60 bg-surface" preserveAspectRatio="none">
+      <defs>
+        <filter id="gradcam-blur" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="6" />
+        </filter>
+        <radialGradient id="gradcam-fade" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#ef4444" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      {points.map((p, i) => {
+        const cx = pad + (p.x / 100) * (w - pad * 2)
+        const cy = pad + (p.y / 100) * (h - pad * 2)
+        const r = 6 + (p.intensity / maxI) * 26
+        return <circle key={i} cx={cx} cy={cy} r={r} fill="url(#gradcam-fade)" filter="url(#gradcam-blur)" />
+      })}
+      <path d={line} fill="none" stroke="var(--color-ink)" strokeWidth="1.8" strokeLinecap="round" opacity="0.85" />
     </svg>
   )
 }
 
 export function ShapBars({ data }: { data: { feature: string; contribution: number }[] }) {
-  const max = Math.max(...data.map((d) => Math.abs(d.contribution)), 0.01)
+  const max = Math.max(...data.map((d) => Math.abs(d.contribution)), 1)
+  const scale = 50 / max
   return (
-    <div className="space-y-3">
-      {data.map((d) => (
-        <div key={d.feature} className="flex items-center gap-3">
-          <span className="w-44 text-[13px] text-muted text-right">{d.feature}</span>
-          <div className="flex-1 flex items-center">
-            {d.contribution < 0 && <div className="h-3 rounded-r bg-danger/70" style={{ width: `${(Math.abs(d.contribution) / max) * 50}%` }} />}
-            <span className="w-[2px] bg-line h-4 shrink-0" />
-            {d.contribution > 0 && <div className="h-3 rounded-l bg-secondary/70" style={{ width: `${(d.contribution / max) * 50}%` }} />}
+    <div>
+      <div className="space-y-3">
+        {data.map((d) => (
+          <div key={d.feature} className="flex items-center gap-3">
+            <span className="w-44 text-[13px] text-muted text-right shrink-0 truncate">{d.feature}</span>
+            <div className="flex-1 flex items-center">
+              {d.contribution < 0 && (
+                <div className="h-3.5 rounded-r bg-danger/70 anim-grow" style={{ width: `${Math.abs(d.contribution) * scale}%`, transformOrigin: "right" }} />
+              )}
+              <span className="w-[2px] bg-line h-5 shrink-0" />
+              {d.contribution > 0 && (
+                <div className="h-3.5 rounded-l bg-secondary/80 anim-grow" style={{ width: `${d.contribution * scale}%`, transformOrigin: "left" }} />
+              )}
+            </div>
+            <span className="w-10 text-[13px] font-bold text-ink text-right shrink-0">{d.contribution}</span>
           </div>
-          <span className="w-12 text-[13px] font-bold text-ink">{(d.contribution * 100).toFixed(0)}</span>
-        </div>
-      ))}
+        ))}
+      </div>
+      <div className="mt-3 flex items-center justify-between text-[11px] text-faint">
+        <span>-{max}</span>
+        <span className="text-[11px] text-faint">SHAP value</span>
+        <span>+{max}</span>
+      </div>
     </div>
   )
 }
 
 export function WaveformPlayer({ duration }: { duration: number }) {
   const [playing, setPlaying] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
+  const timerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!playing) return
+    timerRef.current = window.setInterval(() => {
+      setElapsed((prev) => {
+        if (prev + 0.1 >= duration) {
+          setPlaying(false)
+          return 0
+        }
+        return prev + 0.1
+      })
+    }, 100)
+    return () => {
+      if (timerRef.current) window.clearInterval(timerRef.current)
+    }
+  }, [playing, duration])
+
+  const progress = Math.min(elapsed / duration, 1)
+  const bars = 28
   return (
-    <div className="flex items-center gap-4 p-4 bg-surface-2 rounded-2xl">
-      <button onClick={() => setPlaying((p) => !p)} aria-label={playing ? "Jeda" : "Putar suara"} className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center cursor-pointer">
-        {playing ? <span className="w-3.5 h-3.5 bg-white rounded-[2px]" /> : <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 ml-0.5"><path d="M6 4l14 8-14 8V4Z" /></svg>}
-      </button>
-      <div className="flex-1 flex items-center gap-1 h-10">
-        {Array.from({ length: 24 }).map((_, i) => (
-          <span key={i} className={`w-1 rounded-full ${playing ? "bg-primary anim-wave" : "bg-primary/30"}`} style={playing ? { animationDelay: `${i * 0.04}s`, transformOrigin: "bottom" } : { height: "30%", transformOrigin: "bottom" }} />
-        ))}
+    <div>
+      <div className="flex items-center gap-4 p-4 bg-surface-2 rounded-2xl">
+        <button
+          onClick={() => setPlaying((p) => !p)}
+          aria-label={playing ? "Jeda" : "Putar suara"}
+          className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center cursor-pointer shrink-0 shadow-[0_6px_16px_rgba(29,122,252,0.3)]"
+        >
+          {playing ? <span className="w-3.5 h-3.5 bg-white rounded-[2px]" /> : <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 ml-0.5"><path d="M6 4l14 8-14 8V4Z" /></svg>}
+        </button>
+        <div className="flex-1">
+          <div className="flex items-center gap-1 h-10">
+            {Array.from({ length: bars }).map((_, i) => {
+              const segStart = i / bars
+              const active = playing && progress >= segStart
+              const h = 25 + 65 * Math.abs(Math.sin(i * 1.7 + 1)) * (active ? 1 : 0.45)
+              return (
+                <span
+                  key={i}
+                  className={`flex-1 rounded-full ${active ? "bg-primary" : "bg-primary/30"} transition-colors duration-100`}
+                  style={{ height: `${h}%`, transformOrigin: "bottom" }}
+                />
+              )
+            })}
+          </div>
+          <div className="mt-1.5 h-1 rounded-full bg-line overflow-hidden">
+            <div className="h-full bg-primary transition-[width] duration-100 ease-linear" style={{ width: `${progress * 100}%` }} />
+          </div>
+        </div>
+        <span className="text-[12px] text-muted shrink-0 tabular-nums">{formatTime(elapsed)} / {formatTime(duration)}</span>
       </div>
-      <span className="text-[12px] text-muted">{duration} dtk</span>
     </div>
   )
 }
