@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom"
 import { useApp } from "../state/AppContext"
 import { useT } from "../i18n"
 import { Icon, Avatar } from "./ui"
+import logo from "../assets/logo_NEUMOAI_D.png"
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { doctor, pendingCases } = useApp()
@@ -10,7 +11,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <aside className="hidden lg:flex w-64 flex-col border-r border-line bg-surface shrink-0">
       <div className="flex items-center gap-3 px-5 h-16 border-b border-line">
-        <img src="/logo_NEUMOAI_D.png" alt="NeumoAI-D" className="w-9 h-9 rounded-xl object-cover shrink-0" decoding="async" />
+        <img src={logo} alt="NeumoAI-D" className="w-9 h-9 rounded-xl object-cover shrink-0" decoding="async" />
         <div className="leading-tight">
           <p className="text-[15px] font-extrabold text-ink">{t("app")}</p>
           <p className="text-[11px] text-muted">{t("app_subtitle")}</p>
