@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react"
+import { Line, Bar } from "react-chartjs-2"
 import { formatTime } from "../utils/format"
+import { useApp } from "../state/AppContext"
+import "../lib/chartjs"
+import { chartColors } from "../lib/chartColors"
 
 export function BarChart({ data }: { data: { label: string; value: number }[] }) {
   const max = Math.max(...data.map((d) => d.value), 1)
@@ -94,62 +98,146 @@ export function MelSpectrogram({ grid }: { grid: number[][] }) {
 }
 
 export function GradCam({ points }: { points: { x: number; y: number; intensity: number }[] }) {
-  const w = 200
-  const h = 120
-  const pad = 6
+  const { theme } = useApp()
   if (!points.length) return <p className="text-[13px] text-muted">Data tidak tersedia.</p>
-  // Build a smooth path through the points (baseline wave)
-  const line = points.map((p, i) => `${i === 0 ? "M" : "L"}${pad + (p.x / 100) * (w - pad * 2)},${pad + (p.y / 100) * (h - pad * 2)}`).join(" ")
-  const maxI = Math.max(...points.map((p) => p.intensity))
+  const colors = chartColors()
+  const duration = 6
+  const labels = points.map((p) => +((p.x / 100) * duration).toFixed(2))
+  const signal = points.map((p) => ((p.y - 50) / 50) * 1.2)
+  const heat = points.map((p) => 0.2 + p.intensity * 1.4)
+
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-44 rounded-xl border border-line/60 bg-surface" preserveAspectRatio="none">
-      <defs>
-        <filter id="gradcam-blur" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="6" />
-        </filter>
-        <radialGradient id="gradcam-fade" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#ef4444" stopOpacity="0.9" />
-          <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      {points.map((p, i) => {
-        const cx = pad + (p.x / 100) * (w - pad * 2)
-        const cy = pad + (p.y / 100) * (h - pad * 2)
-        const r = 6 + (p.intensity / maxI) * 26
-        return <circle key={i} cx={cx} cy={cy} r={r} fill="url(#gradcam-fade)" filter="url(#gradcam-blur)" />
-      })}
-      <path d={line} fill="none" stroke="var(--color-ink)" strokeWidth="1.8" strokeLinecap="round" opacity="0.85" />
-    </svg>
+    <div className="relative h-44 w-full">
+      <Line
+        key={theme}
+        data={{
+          labels,
+          datasets: [
+            {
+              label: "Sinyal",
+              data: signal,
+              borderColor: colors.ink,
+              borderWidth: 2,
+              pointRadius: 0,
+              tension: 0.4,
+              fill: false,
+              order: 2,
+            },
+            {
+              label: "Heatmap",
+              data: heat,
+              borderWidth: 0,
+              pointRadius: 0,
+              fill: "origin",
+              tension: 0.4,
+              backgroundColor: (ctx) => {
+                const { chart } = ctx
+                const { ctx: c, chartArea } = chart
+                if (!chartArea) return "rgba(239,68,68,0.15)"
+                const grad = c.createLinearGradient(0, chartArea.bottom, 0, chartArea.top)
+                grad.addColorStop(0, "rgba(239,68,68,0.05)")
+                grad.addColorStop(1, "rgba(239,68,68,0.55)")
+                return grad
+              },
+              order: 1,
+            },
+          ],
+        }}
+        options={{
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "nearest", intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: "rgba(15,23,42,0.9)",
+              titleColor: "#f8fafc",
+              bodyColor: "#cbd5e1",
+              callbacks: {
+                title: (items) => `t = ${items[0]?.label ?? 0}s`,
+                label: (item) => {
+                  const v = item.parsed.y ?? 0
+                  if (item.dataset.label === "Heatmap") return `Pengaruh: ${Math.round((v / 1.6) * 100)}%`
+                  return `Amplitudo: ${v.toFixed(2)}`
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              grid: { color: colors.line },
+              ticks: { color: colors.muted, font: { size: 10 } },
+              title: { display: true, text: "Waktu (s)", color: colors.muted, font: { size: 11 } },
+              min: 0,
+              max: duration,
+            },
+            y: {
+              grid: { color: colors.line },
+              ticks: { color: colors.muted, font: { size: 10 }, display: false },
+              display: true,
+            },
+          },
+        }}
+      />
+    </div>
   )
 }
 
 export function ShapBars({ data }: { data: { feature: string; contribution: number }[] }) {
-  const max = Math.max(...data.map((d) => Math.abs(d.contribution)), 1)
-  const scale = 50 / max
+  const { theme } = useApp()
+  const colors = chartColors()
+  const labels = data.map((d) => d.feature)
+  const values = data.map((d) => d.contribution)
+  const barColors = values.map((v) => (v >= 0 ? `${colors.secondary}cc` : `${colors.danger}cc`))
+
   return (
-    <div>
-      <div className="space-y-3">
-        {data.map((d) => (
-          <div key={d.feature} className="flex items-center gap-3">
-            <span className="w-44 text-[13px] text-muted text-right shrink-0 truncate">{d.feature}</span>
-            <div className="flex-1 flex items-center">
-              {d.contribution < 0 && (
-                <div className="h-3.5 rounded-r bg-danger/70 anim-grow" style={{ width: `${Math.abs(d.contribution) * scale}%`, transformOrigin: "right" }} />
-              )}
-              <span className="w-[2px] bg-line h-5 shrink-0" />
-              {d.contribution > 0 && (
-                <div className="h-3.5 rounded-l bg-secondary/80 anim-grow" style={{ width: `${d.contribution * scale}%`, transformOrigin: "left" }} />
-              )}
-            </div>
-            <span className="w-10 text-[13px] font-bold text-ink text-right shrink-0">{d.contribution}</span>
-          </div>
-        ))}
-      </div>
-      <div className="mt-3 flex items-center justify-between text-[11px] text-faint">
-        <span>-{max}</span>
-        <span className="text-[11px] text-faint">SHAP value</span>
-        <span>+{max}</span>
-      </div>
+    <div className="relative h-64 w-full">
+      <Bar
+        key={theme}
+        data={{
+          labels,
+          datasets: [
+            {
+              label: "SHAP",
+              data: values,
+              backgroundColor: barColors,
+              borderRadius: 5,
+              borderSkipped: false,
+              barPercentage: 0.7,
+            },
+          ],
+        }}
+        options={{
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: "rgba(15,23,42,0.9)",
+              titleColor: "#f8fafc",
+              bodyColor: "#cbd5e1",
+              callbacks: {
+                label: (item) => {
+                  const v = item.parsed.x ?? 0
+                  return `${item.dataset.label}: ${v >= 0 ? "+" : ""}${v}`
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              grid: { color: colors.line },
+              ticks: { color: colors.muted, font: { size: 10 } },
+              title: { display: true, text: "SHAP value", color: colors.muted, font: { size: 11 } },
+            },
+            y: {
+              grid: { display: false },
+              ticks: { color: colors.ink, font: { size: 12 }, autoSkip: false },
+            },
+          },
+        }}
+      />
     </div>
   )
 }
