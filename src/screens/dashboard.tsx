@@ -52,7 +52,7 @@ export function DashboardScreen() {
                   </button>
                 )
               })}
-              {decisionCases.length === 0 && <p className="text-[13px] text-muted text-center py-2">{t("empty.no_pending_cases")}</p>}
+              {decisionCases.length === 0 && <p className="text-[13px] text-muted text-center py-2">{t("empty_no_pending_cases")}</p>}
             </div>
           </Card>
           <Card className="p-6">

@@ -21,7 +21,7 @@ export function DecisionsScreen() {
     <div className="p-6 max-w-[1280px] mx-auto anim-fade-up">
       <PageHeader title={t("page.decisions")} subtitle={`${decisionCases.length} ${t("decisions_subtitle")}`} />
       {decisionCases.length === 0 ? (
-        <Card><EmptyState icon="✅" title={t("empty.no_pending")} desc={t("empty.no_pending_desc")} /></Card>
+        <Card><EmptyState icon="✅" title={t("empty_no_pending")} desc={t("empty_no_pending_desc")} /></Card>
       ) : (
         <div className="space-y-4">
           {decisionCases.map((s) => {
