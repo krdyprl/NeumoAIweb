@@ -1,56 +1,62 @@
 import { useNavigate } from "react-router-dom"
 import { useApp } from "../state/AppContext"
-import { SCREENINGS_BY_PATIENT, PATIENTS, NOTIFICATIONS, WEEKLY_SCREENINGS, RISK_DISTRIBUTION } from "../data/doctorMock"
+import { PATIENTS, SCREENINGS_BY_PATIENT, NOTIFICATIONS, WEEKLY_SCREENINGS, RISK_DISTRIBUTION } from "../data/doctorMock"
+import { useT } from "../i18n"
 import { StatCard, PageHeader, RiskBadge } from "../components/dashboard"
 import { AreaChart, DonutChart } from "../components/charts"
 import { Button, Card, Icon } from "../components/ui"
 
 export function DashboardScreen() {
-  const { doctor, pendingCases } = useApp()
+  const { doctor, decisionCases, pendingCases, lang } = useApp()
+  const t = useT()
   const navigate = useNavigate()
   const hour = new Date().getHours()
-  const greet = hour < 11 ? "Selamat pagi" : hour < 15 ? "Selamat siang" : hour < 18 ? "Selamat sore" : "Selamat malam"
+  const greet = hour < 11 ? t("greet_morning") : hour < 15 ? t("greet_afternoon") : hour < 18 ? t("greet_evening") : t("greet_night")
   const totalPatients = PATIENTS.length
   const todayScreening = SCREENINGS_BY_PATIENT.p1.length + SCREENINGS_BY_PATIENT.p3.length + SCREENINGS_BY_PATIENT.p5.length
-  const highRisk = Object.values(SCREENINGS_BY_PATIENT).flat().filter((s) => s.riskLevel === "high" && s.status === "awaiting").length
+  const highRisk = decisionCases.filter((s) => s.riskLevel === "high").length
+  const pendingList = decisionCases.slice(0, 3)
 
   return (
     <div className="p-6 max-w-[1280px] mx-auto anim-fade-up">
-      <PageHeader title={`${greet}, ${doctor.name}`} subtitle={new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} />
+      <PageHeader title={`${greet}, ${doctor.name}`} subtitle={new Date().toLocaleDateString(lang === "en" ? "en-US" : "id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} />
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <StatCard icon="user" label="Total Pasien Terdaftar" value={totalPatients} sub="+2 minggu ini" tone="primary" />
-        <StatCard icon="chart" label="Skrining Hari Ini" value={todayScreening} sub="3 menunggu" tone="secondary" />
-        <StatCard icon="warning" label="Terindikasi Pneumonia" value={highRisk} sub="risiko tinggi" tone="danger" />
-        <StatCard icon="clock" label="Menunggu Keputusan" value={pendingCases} sub="perlu tinjauan" tone="accent" />
+        <StatCard icon="user" label={t("kpi.total_patients")} value={totalPatients} sub={t("kpi.sub_this_week")} tone="primary" />
+        <StatCard icon="chart" label={t("kpi.screenings_today")} value={todayScreening} sub={t("kpi.sub_awaiting")} tone="secondary" />
+        <StatCard icon="warning" label={t("kpi.pneumonia_flagged")} value={highRisk} sub={t("kpi.sub_high_risk")} tone="danger" />
+        <StatCard icon="clock" label={t("kpi.pending_decisions")} value={pendingCases} sub={t("kpi.sub_review")} tone="accent" />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
-          <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">Skrining — 30 Hari Terakhir</h2><AreaChart data={WEEKLY_SCREENINGS} /></Card>
-          <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">Tingkat Risiko</h2><DonutChart data={RISK_DISTRIBUTION} /></Card>
+          <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("chart.screenings")}</h2><AreaChart data={WEEKLY_SCREENINGS} /></Card>
+          <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("chart.risk_level")}</h2><DonutChart data={RISK_DISTRIBUTION} /></Card>
         </div>
         <div className="space-y-6">
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[16px] font-bold text-ink">Kasus Menunggu Keputusan</h2>
-              <button onClick={() => navigate("/decisions")} className="text-[13px] font-semibold text-primary hover:underline cursor-pointer">Lihat semua</button>
+              <h2 className="text-[16px] font-bold text-ink">{t("panel.pending_list")}</h2>
+              <button onClick={() => navigate("/decisions")} className="text-[13px] font-semibold text-primary hover:underline cursor-pointer">{t("view_all")}</button>
             </div>
             <div className="space-y-3">
-              {Object.entries(SCREENINGS_BY_PATIENT).flatMap(([pid, list]) => list.filter((s) => s.status === "awaiting").map((s) => ({ ...s, patient: PATIENTS.find((p) => p.id === pid) }))).slice(0, 3).map((s) => (
-                <button key={s.id} onClick={() => navigate(`/patients/${s.patient?.id}`)} className="w-full text-left flex items-center gap-3 p-3 rounded-2xl bg-surface-2 hover:bg-primary-soft transition-colors cursor-pointer">
-                  <RiskBadge level={s.riskLevel} />
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-[14px] font-bold text-ink truncate">{s.patient?.name}</span>
-                    <span className="block text-[12px] text-muted truncate">{s.disease} · {s.confidence}%</span>
-                  </span>
-                  <Icon name="chevron" className="w-4 h-4 text-faint" />
-                </button>
-              ))}
-              {highRisk === 0 && <p className="text-[13px] text-muted text-center py-2">Tidak ada kasus menunggu.</p>}
+              {pendingList.map((s) => {
+                const patient = PATIENTS.find((p) => p.id === s.patientId)
+                return (
+                  <button key={s.id} onClick={() => navigate(`/patients/${patient?.id}`)} className="w-full text-left flex items-center gap-3 p-3 rounded-2xl bg-surface-2 hover:bg-primary-soft transition-colors cursor-pointer">
+                    <RiskBadge level={s.riskLevel} />
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-[14px] font-bold text-ink truncate">{patient?.name}</span>
+                      <span className="block text-[12px] text-muted truncate">{s.disease} · {s.confidence}%</span>
+                    </span>
+                    <Icon name="chevron" className="w-4 h-4 text-faint" />
+                  </button>
+                )
+              })}
+              {decisionCases.length === 0 && <p className="text-[13px] text-muted text-center py-2">{t("empty.no_pending_cases")}</p>}
             </div>
           </Card>
           <Card className="p-6">
-            <h2 className="text-[16px] font-bold text-ink mb-4">Notifikasi Terbaru</h2>
+            <h2 className="text-[16px] font-bold text-ink mb-4">{t("panel.latest_notifications")}</h2>
             <div className="space-y-3">
               {NOTIFICATIONS.slice(0, 3).map((n) => (
                 <div key={n.id} className="flex gap-3">
@@ -64,9 +70,9 @@ export function DashboardScreen() {
             </div>
           </Card>
           <Card className="p-6 bg-gradient-to-br from-primary to-primary-deep border-transparent">
-            <h2 className="text-[16px] font-bold text-white mb-1">Buka Daftar Pasien</h2>
-            <p className="text-[13px] text-white/80 mb-4">Tinjau dan kelola hasil skrining pasien.</p>
-            <Button variant="secondary" onClick={() => navigate("/patients")} className="w-full">Daftar Pasien</Button>
+            <h2 className="text-[16px] font-bold text-white mb-1">{t("panel.open_patients")}</h2>
+            <p className="text-[13px] text-white/80 mb-4">{t("panel.open_patients_desc")}</p>
+            <Button variant="secondary" onClick={() => navigate("/patients")} className="w-full">{t("btn.patient_list")}</Button>
           </Card>
         </div>
       </div>

@@ -1,47 +1,49 @@
 import { useState } from "react"
 import { REPORTS, MONTHLY_REPORTS, REGION_REPORTS } from "../data/doctorMock"
+import { useT } from "../i18n"
 import { PageHeader, RiskBadge, StatCard } from "../components/dashboard"
 import { BarChart } from "../components/charts"
 import { Button, Card, Chip, Field } from "../components/ui"
 
 export function ReportsScreen() {
+  const t = useT()
   const [toast, setToast] = useState("")
   const total = REPORTS.reduce((s, r) => s + (r.riskLevel === "high" ? 1 : 0), 0)
   const avgConf = Math.round(REPORTS.reduce((s, r) => s + r.confidence, 0) / REPORTS.length)
   const referrals = REPORTS.filter((r) => r.status.includes("Rujuk") || r.status.includes("Menunggu")).length
 
   function fakeExport(kind: string) {
-    setToast(`Ekspor ${kind} (demo) sedang diproses.`)
+    setToast(t("toast_export").replace("{kind}", kind))
     setTimeout(() => setToast(""), 3000)
   }
 
   return (
     <div className="p-6 max-w-[1280px] mx-auto anim-fade-up">
-      <PageHeader title="Laporan" subtitle="Rekap aktivitas skrining" actions={<><Button variant="outline" onClick={() => fakeExport("PDF")}>Ekspor PDF</Button><Button onClick={() => fakeExport("Excel")}>Ekspor Excel</Button></>} />
+      <PageHeader title={t("page.reports")} subtitle={t("reports_subtitle")} actions={<><Button variant="outline" onClick={() => fakeExport("PDF")}>{t("btn.export_pdf")}</Button><Button onClick={() => fakeExport("Excel")}>{t("btn.export_excel")}</Button></>} />
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <StatCard icon="chart" label="Total Skrining" value={REPORTS.length} tone="primary" />
-        <StatCard icon="warning" label="Terindikasi Pneumonia" value={total} tone="danger" />
-        <StatCard icon="user" label="Rata-rata Confidence" value={`${avgConf}%`} tone="secondary" />
-        <StatCard icon="location" label="Rujukan / Menunggu" value={referrals} tone="accent" />
+        <StatCard icon="chart" label={t("kpi.total_screenings")} value={REPORTS.length} tone="primary" />
+        <StatCard icon="warning" label={t("kpi.pneumonia_flagged")} value={total} tone="danger" />
+        <StatCard icon="user" label={t("kpi.avg_confidence")} value={`${avgConf}%`} tone="secondary" />
+        <StatCard icon="location" label={t("kpi.referrals")} value={referrals} tone="accent" />
       </div>
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-        <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">Skrining per Bulan</h2><BarChart data={MONTHLY_REPORTS.map((m) => ({ label: m.month, value: m.total }))} /></Card>
-        <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">Skrining per Wilayah</h2><BarChart data={REGION_REPORTS.map((r) => ({ label: r.region, value: r.total }))} /></Card>
+        <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("chart.screenings_monthly")}</h2><BarChart data={MONTHLY_REPORTS.map((m) => ({ label: m.month, value: m.total }))} /></Card>
+        <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("chart.screenings_region")}</h2><BarChart data={REGION_REPORTS.map((r) => ({ label: r.region, value: r.total }))} /></Card>
       </div>
       <div className="flex flex-col md:flex-row gap-3 mb-5">
-        <Field label="Dari" value="2026-01-01" onChange={() => {}} />
-        <Field label="Sampai" value="2026-08-31" onChange={() => {}} />
+        <Field label={t("field_from")} value="2026-01-01" onChange={() => {}} />
+        <Field label={t("field_to")} value="2026-08-31" onChange={() => {}} />
       </div>
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-surface-2 text-[12px] text-muted uppercase tracking-wide">
-                <th className="px-5 py-3 font-semibold">Pasien</th>
-                <th className="px-5 py-3 font-semibold">Tanggal</th>
-                <th className="px-5 py-3 font-semibold">Risiko</th>
-                <th className="px-5 py-3 font-semibold">Confidence</th>
-                <th className="px-5 py-3 font-semibold">Status</th>
+                <th className="px-5 py-3 font-semibold">{t("table.patient")}</th>
+                <th className="px-5 py-3 font-semibold">{t("table.date")}</th>
+                <th className="px-5 py-3 font-semibold">{t("table.risk")}</th>
+                <th className="px-5 py-3 font-semibold">{t("ai_confidence")}</th>
+                <th className="px-5 py-3 font-semibold">{t("table.status")}</th>
               </tr>
             </thead>
             <tbody>

@@ -1,18 +1,26 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useApp } from "../state/AppContext"
 import { NOTIFICATIONS } from "../data/doctorMock"
+import { useT } from "../i18n"
 import { PageHeader, FilterChips, EmptyState } from "../components/dashboard"
 import { Button, Card, Icon } from "../components/ui"
 
-const FILTERS = ["Semua", "AI", "Pasien", "Sistem"]
-
 export function NotificationsScreen() {
+  const { lang } = useApp()
+  const t = useT()
   const [items, setItems] = useState(NOTIFICATIONS)
-  const [filter, setFilter] = useState("Semua")
+  const [filter, setFilter] = useState(() => t("filter.all"))
+
+  const FILTERS = [t("filter.all"), t("filter.ai"), t("filter.patient"), t("filter.system")]
+
+  useEffect(() => {
+    setFilter(t("filter.all"))
+  }, [lang])
 
   const filtered = items.filter((n) => {
-    if (filter === "Semua") return true
-    if (filter === "AI") return n.type === "ai"
-    if (filter === "Pasien") return n.type === "patient"
+    if (filter === t("filter.all")) return true
+    if (filter === t("filter.ai")) return n.type === "ai"
+    if (filter === t("filter.patient")) return n.type === "patient"
     return n.type === "system"
   })
   const unread = items.filter((n) => !n.read).length
@@ -25,10 +33,10 @@ export function NotificationsScreen() {
 
   return (
     <div className="p-6 max-w-[1280px] mx-auto anim-fade-up">
-      <PageHeader title="Notifikasi" subtitle={`${unread} belum dibaca`} actions={<Button variant="outline" onClick={() => setItems((p) => p.map((n) => ({ ...n, read: true })))}>Tandai semua dibaca</Button>} />
+      <PageHeader title={t("page.notifications")} subtitle={`${unread} ${t("notifications_subtitle")}`} actions={<Button variant="outline" onClick={() => setItems((p) => p.map((n) => ({ ...n, read: true })))}>{t("btn.mark_all_read")}</Button>} />
       <div className="mb-5"><FilterChips options={FILTERS} value={filter} onChange={setFilter} /></div>
       {filtered.length === 0 ? (
-        <Card><EmptyState icon="🔔" title="Tidak ada notifikasi" desc="Tidak ada notifikasi pada filter ini." /></Card>
+        <Card><EmptyState icon="🔔" title={t("empty.no_notifications")} desc={t("empty.no_notifications_desc")} /></Card>
       ) : (
         <div className="space-y-3">
           {filtered.map((n) => (

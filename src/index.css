@@ -147,16 +147,6 @@ body {
   }
 }
 
-@keyframes wave-bar {
-  0%,
-  100% {
-    transform: scaleY(0.2);
-  }
-  50% {
-    transform: scaleY(1);
-  }
-}
-
 @keyframes float-soft {
   0%,
   100% {

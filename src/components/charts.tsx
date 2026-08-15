@@ -120,7 +120,7 @@ export function WaveformPlayer({ duration }: { duration: number }) {
       </button>
       <div className="flex-1 flex items-center gap-1 h-10">
         {Array.from({ length: 24 }).map((_, i) => (
-          <span key={i} className={`w-1 rounded-full ${playing ? "bg-primary anim-wave" : "bg-primary/30"}`} style={playing ? { animationDelay: `${i * 0.04}s` } : { height: "30%" }} />
+          <span key={i} className={`w-1 rounded-full ${playing ? "bg-primary anim-wave" : "bg-primary/30"}`} style={playing ? { animationDelay: `${i * 0.04}s`, transformOrigin: "bottom" } : { height: "30%", transformOrigin: "bottom" }} />
         ))}
       </div>
       <span className="text-[12px] text-muted">{duration} dtk</span>

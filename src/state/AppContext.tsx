@@ -7,18 +7,20 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import type { DoctorProfile, Lang, ThemeMode } from "../types"
+import type { DoctorProfile, Lang, Screening, ThemeMode } from "../types"
+import { SCREENINGS_BY_PATIENT } from "../data/doctorMock"
 
 interface AppState {
   theme: ThemeMode
   lang: Lang
   doctor: DoctorProfile
+  decisionCases: Screening[]
   pendingCases: number
   setTheme: (t: ThemeMode) => void
   toggleTheme: () => void
   setLang: (l: Lang) => void
   setDoctor: (d: DoctorProfile) => void
-  setPendingCases: (n: number | ((p: number) => number)) => void
+  decideCase: (id: string, action: "accept" | "reject") => void
 }
 
 const AppContext = createContext<AppState | null>(null)
@@ -39,7 +41,24 @@ export function AppProvider({
   })
   const [lang, setLang] = useState<Lang>("id")
   const [doctorState, setDoctor] = useState<DoctorProfile>(doctor)
-  const [pendingCases, setPendingCases] = useState(0)
+  const [decisionCases, setDecisionCases] = useState<Screening[]>(() =>
+    Object.values(SCREENINGS_BY_PATIENT)
+      .flat()
+      .filter((s) => s.status === "awaiting"),
+  )
+
+  const decideCase = useCallback(
+    (id: string, action: "accept" | "reject") => {
+      const newStatus: Screening["status"] =
+        action === "accept" ? "accepted" : "rejected"
+      setDecisionCases((prev) =>
+        prev
+          .map((s) => (s.id === id ? { ...s, status: newStatus } : s))
+          .filter((s) => s.id !== id),
+      )
+    },
+    [],
+  )
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark")
@@ -56,14 +75,15 @@ export function AppProvider({
       theme,
       lang,
       doctor: doctorState,
-      pendingCases,
+      decisionCases,
+      pendingCases: decisionCases.length,
       setTheme,
       toggleTheme,
       setLang,
       setDoctor,
-      setPendingCases,
+      decideCase,
     }),
-    [theme, lang, doctorState, pendingCases, toggleTheme],
+    [theme, lang, doctorState, decisionCases, toggleTheme, decideCase],
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

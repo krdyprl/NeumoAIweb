@@ -3,7 +3,7 @@ import type { ReactElement } from "react"
 import { AppProvider } from "./state/AppContext"
 import { DashboardShell } from "./components/layout"
 import { CURRENT_DOCTOR } from "./data/doctorMock"
-import { LoginScreen } from "./screens/auth"
+import { LoginScreen, NotFoundScreen } from "./screens/auth"
 import { DashboardScreen } from "./screens/dashboard"
 import { PatientsScreen } from "./screens/patients"
 import { PatientDetailScreen } from "./screens/patientDetail"
@@ -33,7 +33,7 @@ export default function App() {
           <Route path="/reports" element={<RequireAuth><DashboardShell><ReportsScreen /></DashboardShell></RequireAuth>} />
           <Route path="/settings" element={<RequireAuth><DashboardShell><SettingsScreen /></DashboardShell></RequireAuth>} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<div className="min-h-screen"><NotFoundScreen /></div>} />
         </Routes>
       </AppProvider>
     </BrowserRouter>

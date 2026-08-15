@@ -1,48 +1,58 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { useApp } from "../state/AppContext"
 import { PATIENTS, SCREENINGS_BY_PATIENT } from "../data/doctorMock"
+import { useT } from "../i18n"
 import { PageHeader, SearchBar, FilterChips, RiskBadge, EmptyState } from "../components/dashboard"
 import { Card, Avatar, Icon } from "../components/ui"
 
-const FILTERS = ["Semua", "Perlu Ditindaklanjuti", "Rendah", "Sedang", "Tinggi"]
-
 export function PatientsScreen() {
   const navigate = useNavigate()
+  const { lang } = useApp()
+  const t = useT()
   const [query, setQuery] = useState("")
-  const [filter, setFilter] = useState("Semua")
+  const [filter, setFilter] = useState(() => t("filter.all"))
+
+  const FILTERS = [t("filter.all"), t("filter.awaiting"), t("filter.low"), t("filter.medium"), t("filter.high")]
+
+  useEffect(() => {
+    setFilter(t("filter.all"))
+  }, [lang])
 
   const rows = useMemo(() => {
     return PATIENTS.map((p) => ({ patient: p, latest: (SCREENINGS_BY_PATIENT[p.id] ?? [])[0] })).filter(({ patient, latest }) => {
       const q = query.toLowerCase()
       if (q && !patient.name.toLowerCase().includes(q) && !patient.nik.includes(q)) return false
-      if (filter === "Semua") return true
-      if (filter === "Perlu Ditindaklanjuti") return latest?.status === "awaiting"
-      return latest?.riskLevel === filter.toLowerCase()
+      if (filter === t("filter.all")) return true
+      if (filter === t("filter.awaiting")) return latest?.status === "awaiting"
+      if (filter === t("filter.low")) return latest?.riskLevel === "low"
+      if (filter === t("filter.medium")) return latest?.riskLevel === "medium"
+      return latest?.riskLevel === "high"
     })
-  }, [query, filter])
+  }, [query, filter, t])
 
   return (
     <div className="p-6 max-w-[1280px] mx-auto anim-fade-up">
-      <PageHeader title="Daftar Pasien" subtitle={`${PATIENTS.length} pasien terdaftar`} />
+      <PageHeader title={t("page.patients")} subtitle={`${PATIENTS.length} ${t("patients_subtitle")}`} />
       <div className="flex flex-col md:flex-row gap-3 mb-5">
-        <SearchBar value={query} onChange={setQuery} />
+        <SearchBar value={query} onChange={setQuery} placeholder={t("search_placeholder")} />
         <FilterChips options={FILTERS} value={filter} onChange={setFilter} />
       </div>
       {rows.length === 0 ? (
-        <Card><EmptyState icon="🔍" title="Tidak ada pasien" desc="Coba ubah kata kunci pencarian atau filter." /></Card>
+        <Card><EmptyState icon="🔍" title={t("empty.no_patients")} desc={t("empty.no_patients_desc")} /></Card>
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-surface-2 text-[12px] text-muted uppercase tracking-wide">
-                  <th className="px-5 py-3 font-semibold">Nama</th>
-                  <th className="px-5 py-3 font-semibold hidden md:table-cell">NIK</th>
-                  <th className="px-5 py-3 font-semibold hidden lg:table-cell">Umur / JK</th>
-                  <th className="px-5 py-3 font-semibold hidden lg:table-cell">Hasil</th>
-                  <th className="px-5 py-3 font-semibold">Risiko</th>
-                  <th className="px-5 py-3 font-semibold hidden sm:table-cell">Tanggal</th>
-                  <th className="px-5 py-3 font-semibold">Aksi</th>
+                  <th className="px-5 py-3 font-semibold">{t("table.name")}</th>
+                  <th className="px-5 py-3 font-semibold hidden md:table-cell">{t("table.nik")}</th>
+                  <th className="px-5 py-3 font-semibold hidden lg:table-cell">{t("table.age_gender")}</th>
+                  <th className="px-5 py-3 font-semibold hidden lg:table-cell">{t("table.result")}</th>
+                  <th className="px-5 py-3 font-semibold">{t("table.risk")}</th>
+                  <th className="px-5 py-3 font-semibold hidden sm:table-cell">{t("table.date")}</th>
+                  <th className="px-5 py-3 font-semibold">{t("table.action")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -54,11 +64,11 @@ export function PatientsScreen() {
                     <tr key={patient.id} className="border-t border-line hover:bg-surface-2/50 transition-colors">
                       <td className="px-5 py-3"><div className="flex items-center gap-3"><Avatar emoji={patient.gender === "male" ? "👦" : "👧"} size={38} /><span className="font-semibold text-ink">{patient.name}</span></div></td>
                       <td className="px-5 py-3 text-muted text-[13px] hidden md:table-cell">{patient.nik}</td>
-                      <td className="px-5 py-3 text-[13px] text-muted hidden lg:table-cell">{ageY} th {ageM} bl · {patient.gender === "male" ? "L" : "P"}</td>
-                      <td className="px-5 py-3 text-[13px] text-muted hidden lg:table-cell">{latest ? `${latest.disease} · ${latest.confidence}%` : "—"}</td>
-                      <td className="px-5 py-3">{latest ? <RiskBadge level={latest.riskLevel} /> : <span className="text-[12px] text-faint">Belum ada</span>}</td>
-                      <td className="px-5 py-3 text-[13px] text-muted hidden sm:table-cell">{latest ? new Date(latest.date).toLocaleDateString("id-ID") : "—"}</td>
-                      <td className="px-5 py-3"><button onClick={() => navigate(`/patients/${patient.id}`)} className="inline-flex items-center gap-1 text-[13px] font-semibold text-primary hover:underline cursor-pointer">Detail <Icon name="chevron" className="w-4 h-4" /></button></td>
+                      <td className="px-5 py-3 text-[13px] text-muted hidden lg:table-cell">{ageY} {t("age_yr")} {ageM} {t("age_mo")} · {patient.gender === "male" ? t("sex_male") : t("sex_female")}</td>
+                      <td className="px-5 py-3 text-[13px] text-muted hidden lg:table-cell">{latest ? `${latest.disease} · ${latest.confidence}%` : t("table.not_available")}</td>
+                      <td className="px-5 py-3">{latest ? <RiskBadge level={latest.riskLevel} /> : <span className="text-[12px] text-faint">{t("table.no_data")}</span>}</td>
+                      <td className="px-5 py-3 text-[13px] text-muted hidden sm:table-cell">{latest ? new Date(latest.date).toLocaleDateString("id-ID") : t("table.not_available")}</td>
+                      <td className="px-5 py-3"><button onClick={() => navigate(`/patients/${patient.id}`)} className="inline-flex items-center gap-1 text-[13px] font-semibold text-primary hover:underline cursor-pointer">{t("table.detail")} <Icon name="chevron" className="w-4 h-4" /></button></td>
                     </tr>
                   )
                 })}

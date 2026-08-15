@@ -1,10 +1,12 @@
 import { useState, type ReactNode } from "react"
 import { NavLink, useNavigate } from "react-router-dom"
 import { useApp } from "../state/AppContext"
+import { useT } from "../i18n"
 import { Icon, Avatar } from "./ui"
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { doctor, pendingCases } = useApp()
+  const t = useT()
   return (
     <aside className="hidden lg:flex w-64 flex-col border-r border-line bg-surface shrink-0">
       <div className="flex items-center gap-3 px-5 h-16 border-b border-line">
@@ -12,18 +14,18 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           N
         </div>
         <div className="leading-tight">
-          <p className="text-[15px] font-extrabold text-ink">NeumoAI-D</p>
-          <p className="text-[11px] text-muted">Dashboard Dokter</p>
+          <p className="text-[15px] font-extrabold text-ink">{t("app")}</p>
+          <p className="text-[11px] text-muted">{t("app_subtitle")}</p>
         </div>
       </div>
       <nav className="flex-1 py-4 px-3 space-y-1">
         {[
-          { path: "/dashboard", label: "Dashboard", icon: "home" },
-          { path: "/patients", label: "Daftar Pasien", icon: "user" },
-          { path: "/decisions", label: "Keputusan Dokter", icon: "check" },
-          { path: "/notifications", label: "Notifikasi", icon: "bell" },
-          { path: "/reports", label: "Laporan", icon: "chart" },
-          { path: "/settings", label: "Pengaturan", icon: "edit" },
+          { path: "/dashboard", label: t("nav.dashboard"), icon: "home" },
+          { path: "/patients", label: t("nav.patients"), icon: "user" },
+          { path: "/decisions", label: t("nav.decisions"), icon: "check" },
+          { path: "/notifications", label: t("nav.notifications"), icon: "bell" },
+          { path: "/reports", label: t("nav.reports"), icon: "chart" },
+          { path: "/settings", label: t("nav.settings"), icon: "edit" },
         ].map((item) => (
           <NavLink
             key={item.path}
@@ -60,20 +62,21 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
 export function TopBar() {
   const { doctor, pendingCases, toggleTheme, theme } = useApp()
+  const t = useT()
   const navigate = useNavigate()
   return (
     <header className="flex items-center gap-4 px-6 h-16 border-b border-line bg-bg/80 backdrop-blur-xl sticky top-0 z-30">
       <div className="flex-1" />
       <button
         onClick={toggleTheme}
-        aria-label="Ganti tema"
+        aria-label={t("aria.theme")}
         className="w-10 h-10 rounded-xl bg-surface-2 text-muted hover:text-primary flex items-center justify-center transition-colors cursor-pointer"
       >
         <Icon name={theme === "dark" ? "sun" : "moon"} className="w-5 h-5" />
       </button>
       <button
         onClick={() => navigate("/notifications")}
-        aria-label="Notifikasi"
+        aria-label={t("aria.notifications")}
         className="relative w-10 h-10 rounded-xl bg-surface-2 text-muted hover:text-primary flex items-center justify-center transition-colors cursor-pointer"
       >
         <Icon name="bell" className="w-5 h-5" />
@@ -94,6 +97,7 @@ export function TopBar() {
 
 export function DashboardShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const t = useT()
   return (
     <div className="min-h-screen bg-bg text-ink flex">
       <Sidebar />
@@ -109,12 +113,12 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <div className="lg:hidden flex items-center justify-between px-4 h-14 border-b border-line">
           <button
             onClick={() => setMobileOpen(true)}
-            aria-label="Buka menu"
+            aria-label={t("aria.open_menu")}
             className="w-10 h-10 rounded-xl bg-surface-2 text-muted flex items-center justify-center cursor-pointer"
           >
             <Icon name="back" className="w-5 h-5 rotate-180" />
           </button>
-          <p className="text-[15px] font-bold text-ink">NeumoAI-D</p>
+          <p className="text-[15px] font-bold text-ink">{t("app")}</p>
           <span className="w-10" />
         </div>
         <TopBar />
