@@ -77,6 +77,8 @@ export interface AiExplain {
   reasoning: string[]
   melGrid: number[][]
   gradCam: { x: number; y: number; intensity: number }[]
+  /** Heatmap Grad-CAM 2D [frekuensi][waktu], 0..1 (opsional; untuk tampilan heatmap). */
+  gradCamGrid?: number[][]
   shap: { feature: string; contribution: number }[]
 }
 

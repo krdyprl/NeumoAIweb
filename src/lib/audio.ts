@@ -195,9 +195,11 @@ export function computeMelSpectrogram(samples: Float32Array, sampleRate: number 
   const window = hannWindow(N_FFT)
   const filterbank = buildMelFilterbank(N_MELS, N_FFT, sampleRate, FMIN, Math.min(FMAX, sampleRate / 2))
   const numFrames = Math.max(1, Math.floor((samples.length - N_FFT) / HOP_LENGTH) + 1)
-  const grid: number[][] = []
 
-  // Mel power (power=2.0): sum_k filterbank[m][k] * |X[k]|^2
+  // Hitung power per frame, lalu bangun grid [frekuensi][waktu] = [mel][frame].
+  // Ini MENYAMAKAN orientasi `librosa.melspectrogram` (n_mels, n_frames) di notebook,
+  // sehingga di input model: height=frekuensi, width=waktu (tidak terbalik).
+  const framePower: Float32Array[] = []
   for (let f = 0; f < numFrames; f++) {
     const frameStart = f * HOP_LENGTH
     const frame = new Float32Array(N_FFT)
@@ -209,15 +211,22 @@ export function computeMelSpectrogram(samples: Float32Array, sampleRate: number 
     for (let k = 0; k < N_FFT / 2 + 1; k++) {
       power[k] = spectrum[k] * spectrum[k]
     }
-    const melEnergies = new Array<number>(N_MELS).fill(0)
-    for (let m = 0; m < N_MELS; m++) {
+    framePower.push(power)
+  }
+
+  // grid[mel][frame] — baris = frekuensi (mel), kolom = waktu (frame).
+  const grid: number[][] = []
+  for (let m = 0; m < N_MELS; m++) {
+    const row = new Array<number>(numFrames).fill(0)
+    for (let f = 0; f < numFrames; f++) {
+      const power = framePower[f]
       let sum = 0
       for (let k = 0; k < N_FFT / 2 + 1; k++) {
         sum += filterbank[m][k] * power[k]
       }
-      melEnergies[m] = sum
+      row[f] = sum
     }
-    grid.push(melEnergies)
+    grid.push(row)
   }
 
   // power_to_db(ref=np.max): 10*log10(mel) - 10*log10(max)  → max = 0 dB

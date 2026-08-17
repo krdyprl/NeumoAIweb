@@ -199,6 +199,17 @@ export function buildFallbackExplain(patientId: string, confidence: number): AiE
     y: 50 + 40 * Math.sin(i / 3),
     intensity: 0.15 + 0.8 * Math.pow(Math.sin(i / 4), 2),
   }))
+  // Placeholder heatmap 2D [rows][cols] agar komponen GradCam menampilkan
+  // heatmap overlay (bukan line chart).
+  const gradCamGrid: number[][] = []
+  for (let r = 0; r < rows; r++) {
+    const row: number[] = []
+    for (let c = 0; c < cols; c++) {
+      const base = 0.2 + 0.5 * Math.pow(Math.sin(c / 6 + r / 4), 2)
+      row.push(Math.max(0, Math.min(1, base + (Math.random() - 0.5) * 0.15)))
+    }
+    gradCamGrid.push(row)
+  }
   return {
     patientId,
     prediction: "Pneumonia",
@@ -211,6 +222,7 @@ export function buildFallbackExplain(patientId: string, confidence: number): AiE
     ],
     melGrid,
     gradCam,
+    gradCamGrid,
     shap: [
       { feature: "Durasi inspirasi", contribution: 42 },
       { feature: "Bunyi ronki basah", contribution: 31 },

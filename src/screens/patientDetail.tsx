@@ -166,7 +166,7 @@ export function PatientDetailScreen() {
                   </Card>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("ai_mel")}</h2><MelSpectrogram grid={explain.melGrid} /><p className="text-[12px] text-muted mt-2">{t("ai_mel_desc")}</p></Card>
-                    <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("ai_gradcam")}</h2><GradCam points={explain.gradCam} /><p className="text-[12px] text-muted mt-2">{t("ai_gradcam_desc")}</p></Card>
+                    <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("ai_gradcam")}</h2><GradCam points={explain.gradCam} grid={explain.gradCamGrid} /><p className="text-[12px] text-muted mt-2">{t("ai_gradcam_desc")}</p></Card>
                   </div>
                   <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("ai_shap")}</h2><ShapBars data={explain.shap} /></Card>
                 </>

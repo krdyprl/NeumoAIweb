@@ -76,11 +76,13 @@ export function MelSpectrogram({ grid }: { grid: number[][] }) {
   function colorFor(v: number) {
     return colors[Math.max(0, Math.min(colors.length - 1, Math.floor(v * (colors.length - 1))))]
   }
+  // grid[rows][cols] dengan rows = frekuensi (mel), cols = waktu (frame).
+  // Balik sumbu-y agar frekuensi RENDAH di bawah (konvensi spectrogram).
   return (
     <div>
       <svg viewBox={`0 0 ${cols} ${rows}`} className="h-44 w-full rounded-lg" preserveAspectRatio="none">
         {grid.map((row, r) =>
-          row.map((v, c) => <rect key={`${r}-${c}`} x={c + 0.25} y={r + 0.25} width={0.5} height={0.5} fill={colorFor(v)} />),
+          row.map((v, c) => <rect key={`${r}-${c}`} x={c + 0.25} y={rows - 1 - r + 0.25} width={0.5} height={0.5} fill={colorFor(v)} />),
         )}
       </svg>
       <svg viewBox={`0 0 100 24`} className="w-full h-4" preserveAspectRatio="none" aria-hidden>
@@ -97,8 +99,40 @@ export function MelSpectrogram({ grid }: { grid: number[][] }) {
   )
 }
 
-export function GradCam({ points }: { points: { x: number; y: number; intensity: number }[] }) {
+export function GradCam({ points, grid }: { points: { x: number; y: number; intensity: number }[]; grid?: number[][] }) {
   const { theme } = useApp()
+
+  // Jika heatmap 2D tersedia (Grad-CAM asli), tampilkan sebagai heatmap overlay.
+  if (grid && grid.length && grid[0].length) {
+    const rows = grid.length
+    const cols = grid[0].length
+    const colors = ["rgba(29,58,110,0.05)", "rgba(29,122,252,0.2)", "rgba(62,207,142,0.4)", "rgba(255,209,102,0.6)", "rgba(255,138,0,0.8)", "rgba(239,68,68,0.95)"]
+    function colorFor(v: number) {
+      return colors[Math.max(0, Math.min(colors.length - 1, Math.floor(v * (colors.length - 1))))]
+    }
+    // grid[rows][cols]: rows=frekuensi, cols=waktu. Balik y agar frekuensi rendah di bawah.
+    return (
+      <div>
+        <svg viewBox={`0 0 ${cols} ${rows}`} className="h-44 w-full rounded-lg" preserveAspectRatio="none">
+          {grid.map((row, r) =>
+            row.map((v, c) => <rect key={`${r}-${c}`} x={c + 0.25} y={rows - 1 - r + 0.25} width={0.5} height={0.5} fill={colorFor(Math.max(0, Math.min(1, v)))} />),
+          )}
+        </svg>
+        <svg viewBox={`0 0 100 24`} className="w-full h-4" preserveAspectRatio="none" aria-hidden>
+          <defs>
+            <linearGradient id="gradcam-scale" x1="0" y1="0" x2="1" y2="0">
+              {colors.map((c, i) => (
+                <stop key={i} offset={`${(i / (colors.length - 1)) * 100}%`} stopColor={c} />
+              ))}
+            </linearGradient>
+          </defs>
+          <rect x="0" y="4" width="100" height="10" fill="url(#gradcam-scale)" rx="2" />
+        </svg>
+      </div>
+    )
+  }
+
+  // Fallback: line chart (data placeholder / legacy).
   if (!points.length) return <p className="text-[13px] text-muted">Data tidak tersedia.</p>
   const colors = chartColors()
   const duration = 6

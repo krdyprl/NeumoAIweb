@@ -75,10 +75,12 @@ function buildFromMel(
   // melGrid = dB mentah (ref=max); untuk tampilan normalisasi ke [0,1].
   const grid = resizeGridTo(normalizeGridForDisplay(melGrid), rows, cols)
 
-  // Jika ada heatmap Grad-CAM asli [h,w], proyeksikan ke garis waktu untuk
-  // komponen GradCam (tiap kolom waktu -> intensitas maks/spasial).
+  // Heatmap Grad-CAM asli [h,w] (frekuensi x waktu). Simpan sebagai grid 2D
+  // agar komponen GradCam menampilkan heatmap overlay (bukan line chart).
+  let gradCamGrid: number[][] | undefined
   let gradCam: { x: number; y: number; intensity: number }[]
   if (heatmap && heatmap.length) {
+    gradCamGrid = resizeGridTo(heatmap, rows, cols)
     const h = heatmap.length
     const w = heatmap[0]?.length ?? 1
     gradCam = Array.from({ length: 60 }, (_, i) => {
@@ -114,6 +116,7 @@ function buildFromMel(
     ],
     melGrid: grid,
     gradCam,
+    gradCamGrid,
     shap: [
       { feature: "Durasi inspirasi", contribution: 42 },
       { feature: "Bunyi ronki basah", contribution: 31 },

@@ -80,7 +80,7 @@ export function AudioAnalyzer({
             </div>
             <div>
               <h3 className="text-[14px] font-bold text-ink mb-2">{t("ai_gradcam")}</h3>
-              <GradCam points={explain.gradCam} />
+              <GradCam points={explain.gradCam} grid={explain.gradCamGrid} />
             </div>
           </div>
           <div>
