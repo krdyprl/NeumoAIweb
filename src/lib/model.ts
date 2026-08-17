@@ -23,12 +23,26 @@ export interface GradCamResult {
 let sessionPromise: Promise<import("onnxruntime-web").InferenceSession | null> | null = null
 let gradcamSessionPromise: Promise<import("onnxruntime-web").InferenceSession | null> | null = null
 
+// Pastikan ONNX Runtime Web menemukan file wasm-nya sendiri (reletif ke bundle).
+function configureOrtEnv(ort: typeof import("onnxruntime-web")) {
+  // Arahkan wasm ke CDN unpkg agar tidak bergantung pada lokasi file di bundle.
+  ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0/dist/"
+  ort.env.wasm.numThreads = 1
+}
+
 async function load(path: string): Promise<import("onnxruntime-web").InferenceSession | null> {
   const ort = await import("onnxruntime-web")
-  const res = await fetch(path)
-  if (!res.ok) return null
-  const bytes = await res.arrayBuffer()
-  return ort.InferenceSession.create(bytes, { executionProviders: ["wasm"] })
+  configureOrtEnv(ort)
+  try {
+    // Pass Uint8Array (bukan ArrayBuffer) — lebih stabil utk protobuf parsing
+    // model ONNX besar di ONNX Runtime Web.
+    const res = await fetch(path)
+    if (!res.ok) return null
+    const bytes = new Uint8Array(await res.arrayBuffer())
+    return await ort.InferenceSession.create(bytes, { executionProviders: ["wasm"] })
+  } catch {
+    return null
+  }
 }
 
 async function ensureSession(): Promise<import("onnxruntime-web").InferenceSession | null> {
