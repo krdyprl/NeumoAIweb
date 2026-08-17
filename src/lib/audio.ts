@@ -1,20 +1,23 @@
 export interface MelSpectrogramResult {
+  /** Grid dB (ref=max) untuk input model — persis seperti `logmel_224` training. */
   grid: number[][]
   sampleRate: number
   durationSec: number
 }
 
 const TARGET_SR = 16000
-const N_FFT = 512
-const HOP = 160
+
+// Parameter STFT mengikuti default librosa `melspectrogram` di notebook training:
+const N_FFT = 2048
+const HOP_LENGTH = 512
 const N_MELS = 64
-const MIN_HZ = 0
-const MAX_HZ = 8000
+const FMIN = 100
+const FMAX = 8000
 const BANDPASS_LOW = 100
 const BANDPASS_HIGH = 5000
 const COUGH_DUR_S = 1.5
 
-// ── Mel filterbank ──────────────────────────────────────────────────────────
+// ── Mel filterbank (librosa-style) ──────────────────────────────────────────
 
 function hzToMel(hz: number): number {
   return 2595 * Math.log10(1 + hz / 700)
@@ -24,14 +27,14 @@ function melToHz(mel: number): number {
   return 700 * (Math.pow(10, mel / 2595) - 1)
 }
 
-function buildMelFilterbank(nMels: number): number[][] {
-  const fftBins = N_FFT / 2 + 1
-  const melMax = hzToMel(MAX_HZ)
-  const melMin = hzToMel(MIN_HZ)
+function buildMelFilterbank(nMels: number, nFft: number, sr: number, fmin: number, fmax: number): number[][] {
+  const fftBins = nFft / 2 + 1
+  const melMax = hzToMel(fmax)
+  const melMin = hzToMel(fmin)
   const melPoints = Array.from({ length: nMels + 2 }, (_, i) =>
     melToHz(melMin + ((melMax - melMin) / (nMels + 1)) * i),
   )
-  const binFreqs = Array.from({ length: fftBins }, (_, i) => (i * TARGET_SR) / N_FFT)
+  const binFreqs = Array.from({ length: fftBins }, (_, i) => (i * sr) / nFft)
   const filterbank: number[][] = []
   for (let m = 0; m < nMels; m++) {
     const row: number[] = []
@@ -50,7 +53,7 @@ function buildMelFilterbank(nMels: number): number[][] {
   return filterbank
 }
 
-// ── STFT ────────────────────────────────────────────────────────────────────
+// ── STFT (hann window, default librosa) ─────────────────────────────────────
 
 function hannWindow(size: number): Float32Array {
   const w = new Float32Array(size)
@@ -60,7 +63,6 @@ function hannWindow(size: number): Float32Array {
   return w
 }
 
-// FFT in-place (iterative Cooley-Tukey). Returns magnitude-only via real parts.
 function fftReal(samples: Float32Array): Float32Array {
   const n = samples.length
   const real = Array.from(samples)
@@ -112,40 +114,25 @@ function resample(input: Float32Array, fromRate: number, toRate: number): Float3
   return out
 }
 
-// 4th-order Butterworth band-pass (bi-quad cascade approximation).
-function butterBandpass(
-  input: Float32Array,
-  sampleRate: number,
-  low: number,
-  high: number,
-): Float32Array {
-  const order = 4
+function butterBandpass(input: Float32Array, sampleRate: number, low: number, high: number): Float32Array {
+  const n = 2 // 4th order → 2 biquad sections
   const w1 = 2 * Math.PI * low / sampleRate
   const w2 = 2 * Math.PI * high / sampleRate
-  const n = order / 2
-
-  // Warped cutoff frequencies (bilinear transform, no prewarp correction).
-  const wc = w2 - w1
-  const wc2 = wc / 2
+  const wc2 = (w2 - w1) / 2
   const alpha = Math.sin(wc2) / Math.sinh((1 / n) * Math.asinh(1))
-
   const out = new Float32Array(input.length)
   out.set(input)
-
   const y = new Float32Array(input.length)
-  // Simple cascade: apply two band-pass sections (4th order overall).
   for (let section = 0; section < 2; section++) {
     const a0 = 1 + alpha
     const a1 = -2 * Math.cos(wc2)
     const a2 = 1 - alpha
     const b0 = alpha
-    const b1 = 0
     const b2 = -alpha
-    // Also subtract lower band edge (approximate band-pass via high-pass*low-pass)
     let x1 = 0, x2 = 0, y1 = 0, y2 = 0
     for (let i = 0; i < out.length; i++) {
       const xn = out[i]
-      const yn = (b0 / a0) * xn + (b1 / a0) * x1 + (b2 / a0) * x2 - (a1 / a0) * y1 - (a2 / a0) * y2
+      const yn = (b0 / a0) * xn + (b2 / a0) * x2 - (a1 / a0) * y1 - (a2 / a0) * y2
       x2 = x1; x1 = xn; y2 = y1; y1 = yn
       y[i] = yn
     }
@@ -166,7 +153,6 @@ function normalizeAmplitude(input: Float32Array): Float32Array {
   return out
 }
 
-// Extract 1.5s window centered on highest energy (cough segmentation).
 function coughSegment(input: Float32Array, sampleRate: number): Float32Array {
   const targetLen = COUGH_DUR_S * sampleRate
   if (input.length <= targetLen) {
@@ -194,15 +180,26 @@ function coughSegment(input: Float32Array, sampleRate: number): Float32Array {
   return input.slice(bestStart, bestStart + targetLen)
 }
 
-// ── Log-Mel spectrogram (dB scale) → 0..1 grid ──────────────────────────────
+// ── Log-Mel spectrogram (mirror `logmel_224` training) ──────────────────────
+//
+// Mencerminkan persis notebook:
+//   mel = librosa.melspectrogram(y, sr, n_mels=64, fmin=100, fmax=8000, power=2.0)
+//   logmel = librosa.power_to_db(mel, ref=np.max)     // 0 dB = max, sisanya negatif
+//   img = resize(logmel[...,None], (224,224), bilinear)  // dilakukan di model.ts
+//   img3 = repeat(img, 3, axis=-1)                    // dilakukan di model.ts
+//
+// Fungsi ini mengembalikan grid dB (ref=max) MENTAH (bukan dinormalisasi ke [0,1]).
+// Normalisasi untuk tampilan dilakukan terpisah lewat normalizeGridForDisplay().
 
 export function computeMelSpectrogram(samples: Float32Array, sampleRate: number = TARGET_SR): MelSpectrogramResult {
   const window = hannWindow(N_FFT)
-  const filterbank = buildMelFilterbank(N_MELS)
-  const numFrames = Math.max(1, Math.floor((samples.length - N_FFT) / HOP))
+  const filterbank = buildMelFilterbank(N_MELS, N_FFT, sampleRate, FMIN, Math.min(FMAX, sampleRate / 2))
+  const numFrames = Math.max(1, Math.floor((samples.length - N_FFT) / HOP_LENGTH) + 1)
   const grid: number[][] = []
+
+  // Mel power (power=2.0): sum_k filterbank[m][k] * |X[k]|^2
   for (let f = 0; f < numFrames; f++) {
-    const frameStart = f * HOP
+    const frameStart = f * HOP_LENGTH
     const frame = new Float32Array(N_FFT)
     for (let i = 0; i < N_FFT; i++) {
       frame[i] = (samples[frameStart + i] ?? 0) * window[i]
@@ -218,14 +215,35 @@ export function computeMelSpectrogram(samples: Float32Array, sampleRate: number 
       for (let k = 0; k < N_FFT / 2 + 1; k++) {
         sum += filterbank[m][k] * power[k]
       }
-      melEnergies[m] = 10 * Math.log10(Math.max(sum, 1e-10))
+      melEnergies[m] = sum
     }
     grid.push(melEnergies)
   }
-  // Normalize dB values to [0,1] (min/max across the grid).
+
+  // power_to_db(ref=np.max): 10*log10(mel) - 10*log10(max)  → max = 0 dB
+  let maxMel = 0
+  for (const row of grid) {
+    for (const v of row) {
+      if (v > maxMel) maxMel = v
+    }
+  }
+  const ref = maxMel || 1e-12
+  const dbGrid: number[][] = grid.map((row) =>
+    row.map((v) => 10 * Math.log10((v + 1e-10) / ref)),
+  )
+
+  return {
+    grid: dbGrid,
+    sampleRate: TARGET_SR,
+    durationSec: samples.length / sampleRate,
+  }
+}
+
+// Normalisasi grid dB ke [0,1] untuk keperluan tampilan (chart).
+export function normalizeGridForDisplay(dbGrid: number[][]): number[][] {
   let minVal = Infinity
   let maxVal = -Infinity
-  for (const row of grid) {
+  for (const row of dbGrid) {
     for (const v of row) {
       if (isFinite(v)) {
         if (v < minVal) minVal = v
@@ -235,20 +253,16 @@ export function computeMelSpectrogram(samples: Float32Array, sampleRate: number 
   }
   if (!isFinite(minVal)) minVal = 0
   if (!isFinite(maxVal) || maxVal === minVal) maxVal = minVal + 1
-  const normalized = grid.map((row) =>
+  return dbGrid.map((row) =>
     row.map((v) => {
       const n = (v - minVal) / (maxVal - minVal || 1)
       return Math.max(0, Math.min(1, n))
     }),
   )
-  return {
-    grid: normalized,
-    sampleRate: TARGET_SR,
-    durationSec: samples.length / sampleRate,
-  }
 }
 
-// Full pipeline mirroring the training notebook (band-pass → 16k → normalize → segment).
+// Full pipeline mirroring the training notebook:
+// band-pass → 16k → peak normalize → cough segment → log-mel (dB ref=max).
 export async function audioToMel(file: File): Promise<MelSpectrogramResult> {
   const { samples, sampleRate } = await decodeAudioNative(file)
   let y = butterBandpass(samples, sampleRate, BANDPASS_LOW, BANDPASS_HIGH)

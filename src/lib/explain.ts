@@ -1,5 +1,5 @@
 import type { AiExplain } from "../types"
-import { audioToMel, resizeGridTo } from "./audio"
+import { audioToMel, normalizeGridForDisplay, resizeGridTo } from "./audio"
 import { buildFallbackExplain, isGradCamModelAvailable, isModelAvailable, runInference, runInferenceWithGradCam } from "./model"
 import { getAudioUrlOrPublic } from "./storage"
 
@@ -72,7 +72,8 @@ function buildFromMel(
 ): AiExplain {
   const rows = 24
   const cols = 40
-  const grid = resizeGridTo(melGrid, rows, cols)
+  // melGrid = dB mentah (ref=max); untuk tampilan normalisasi ke [0,1].
+  const grid = resizeGridTo(normalizeGridForDisplay(melGrid), rows, cols)
 
   // Jika ada heatmap Grad-CAM asli [h,w], proyeksikan ke garis waktu untuk
   // komponen GradCam (tiap kolom waktu -> intensitas maks/spasial).

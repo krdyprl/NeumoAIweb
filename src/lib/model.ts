@@ -63,7 +63,11 @@ export async function isGradCamModelAvailable(): Promise<boolean> {
   return (await ensureGradCamSession()) !== null
 }
 
-// ── Input tensor builder (mel grid -> [1,224,224,3] float in [-1,1]) ─────────
+// ── Input tensor builder ─────────────────────────────────────────────────────
+//
+// Model menerima [1,224,224,3] float32 berisi LOG-MEL dB MENTAH (ref=max),
+// persis seperti `logmel_224` di notebook training. `preprocess_input` ada DI
+// DALAM graph model, jadi nilai dB dikirim apa adanya (tanpa *2-1 / min-max).
 
 function buildInputTensor(melGrid: number[][], ort: any) {
   const size = MODEL_INPUT_SIZE
@@ -72,7 +76,7 @@ function buildInputTensor(melGrid: number[][], ort: any) {
   let idx = 0
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
-      const v = (square[r][c] ?? 0) * 2 - 1 // [0,1] -> [-1,1]
+      const v = square[r][c] ?? 0 // dB mentah (ref=max), biasanya <= 0
       flat[idx] = v
       flat[idx + 1] = v
       flat[idx + 2] = v
