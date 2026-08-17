@@ -2,6 +2,8 @@
 
 Dashboard skrining pernapasan anak untuk dokter. Bagian dari ekosistem [NeumoAIweb] yang menampilkan hasil skrining pasien, memutar audio batuk, dan menghitung **Grad-CAM di browser** (ONNX Runtime Web).
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 ## Arsitektur
 ```
 [HP Flutter — pasien]  →  rekam audio → Supabase (Storage `audio/` + tabel `screenings`)
@@ -47,3 +49,7 @@ pnpm typecheck  # cek tipe
 
 ## Deploy
 Build static (`pnpm build`) → deploy `dist/` ke Vercel / Netlify. Arahkan ke Supabase via env vars.
+
+## Lisensi
+Proyek ini dilisensikan di bawah **MIT License** — lihat file [`LICENSE`](LICENSE).
+Daftar lisensi seluruh dependensi tersedia di [`LISENSI-WEB.md`](LISENSI-WEB.md).
