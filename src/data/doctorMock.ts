@@ -87,6 +87,18 @@ function makeAiExplain(id: string, confidence: number): AiExplain {
     y: 50 + 40 * Math.sin(i / 3),
     intensity: 0.15 + 0.8 * Math.pow(Math.sin(i / 4), 2),
   }))
+  // Heatmap 2D [frekuensi][waktu] — dipakai komponen GradCam untuk heatmap
+  // overlay (bukan line chart). Pola meniru model lebih fokus pada
+  // segmen frekuensi rendah-menengah dan mid-window waktu.
+  const gradCamGrid: number[][] = []
+  for (let r = 0; r < rows; r++) {
+    const row: number[] = []
+    for (let c = 0; c < cols; c++) {
+      const base = Math.pow(Math.sin(c / 6 + r / 5), 2)
+      row.push(Math.max(0, Math.min(1, base * 0.9 + 0.1)))
+    }
+    gradCamGrid.push(row)
+  }
   return {
     patientId: id,
     prediction: "Pneumonia",
@@ -99,6 +111,7 @@ function makeAiExplain(id: string, confidence: number): AiExplain {
     ],
     melGrid,
     gradCam,
+    gradCamGrid,
     shap: [
       { feature: "Durasi inspirasi", contribution: 42 },
       { feature: "Bunyi ronki basah", contribution: 31 },

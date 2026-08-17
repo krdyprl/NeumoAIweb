@@ -82,7 +82,7 @@ export function MelSpectrogram({ grid }: { grid: number[][] }) {
     <div>
       <svg viewBox={`0 0 ${cols} ${rows}`} className="h-44 w-full rounded-lg" preserveAspectRatio="none">
         {grid.map((row, r) =>
-          row.map((v, c) => <rect key={`${r}-${c}`} x={c + 0.25} y={rows - 1 - r + 0.25} width={0.5} height={0.5} fill={colorFor(v)} />),
+          row.map((v, c) => <rect key={`${r}-${c}`} x={c} y={rows - 1 - r} width={1} height={1} fill={colorFor(v)} />),
         )}
       </svg>
       <svg viewBox={`0 0 100 24`} className="w-full h-4" preserveAspectRatio="none" aria-hidden>
@@ -115,7 +115,7 @@ export function GradCam({ points, grid }: { points: { x: number; y: number; inte
       <div>
         <svg viewBox={`0 0 ${cols} ${rows}`} className="h-44 w-full rounded-lg" preserveAspectRatio="none">
           {grid.map((row, r) =>
-            row.map((v, c) => <rect key={`${r}-${c}`} x={c + 0.25} y={rows - 1 - r + 0.25} width={0.5} height={0.5} fill={colorFor(Math.max(0, Math.min(1, v)))} />),
+            row.map((v, c) => <rect key={`${r}-${c}`} x={c} y={rows - 1 - r} width={1} height={1} fill={colorFor(Math.max(0, Math.min(1, v)))} />),
           )}
         </svg>
         <svg viewBox={`0 0 100 24`} className="w-full h-4" preserveAspectRatio="none" aria-hidden>
