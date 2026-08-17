@@ -31,9 +31,11 @@ Jika `--savedmodel` tidak diberikan, skrip membangun model dengan bobot ImageNet
 (hanya uji pipeline, bukan model pneumonia final).
 
 ## Verifikasi format
+Untuk memeriksa input/output model ONNX secara lokal, gunakan `onnxruntime-node`
+(di-install manual bila perlu, bukan dependency proyek):
 ```bash
-pnpm add -D onnxruntime-node   # sekali, utk inspeksi lokal
-node scripts/inspect_model.cjs
+pnpm add -D onnxruntime-node   # opsional, utk inspeksi lokal
+node -e "const fs=require('fs');const ort=require('onnxruntime-node');ort.InferenceSession.create(fs.readFileSync('public/models/mobilenetv2.onnx'),{executionProviders:['cpu']}).then(s=>{console.log('inputs',s.inputNames,'outputs',s.outputNames)})"
 ```
 Harus menampilkan input `[1,224,224,3]` dan output probabilitas.
 
