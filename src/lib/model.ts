@@ -34,12 +34,10 @@ async function load(path: string): Promise<import("onnxruntime-web").InferenceSe
   const ort = await import("onnxruntime-web")
   configureOrtEnv(ort)
   try {
-    // Pass Uint8Array (bukan ArrayBuffer) — lebih stabil utk protobuf parsing
-    // model ONNX besar di ONNX Runtime Web.
-    const res = await fetch(path)
-    if (!res.ok) return null
-    const bytes = new Uint8Array(await res.arrayBuffer())
-    return await ort.InferenceSession.create(bytes, { executionProviders: ["wasm"] })
+    // Berikan path URL langsung ke ONNX Runtime Web. ONNX fetch sendiri dan
+    // menangani loading wasm/streaming secara internal — paling andal utk
+    // menghindari 'protobuf parsing failed' pada model besar.
+    return await ort.InferenceSession.create(path, { executionProviders: ["wasm"] })
   } catch {
     return null
   }
