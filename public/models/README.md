@@ -3,9 +3,14 @@
 Dua model yang dikenali website:
 
 ## 1. `mobilenetv2.onnx` — prediksi (wajib)
-- Input : `[1, 224, 224, 3]` float (NHWC), nilai dalam `[-1, 1]` (Keras `preprocess_input`).
+- Input : `[1, 224, 224, 3]` float32 (NHWC), berisi **Log-Mel dB mentah**
+  (`power_to_db(ref=np.max)`, maksimum = 0 dB, sisanya negatif).
 - Output: `[1, 1]` sigmoid = probabilitas pneumonia.
 - Dipakai untuk confidence/prediksi. Sudah tersedia.
+
+> Input **bukan** `[-1,1]` dan **bukan** `[0,1]` — `preprocess_input` Keras sudah
+> ada **di dalam** graph model. Kirim nilai dB mentah apa adanya (website melakukannya
+> otomatis di `src/lib/audio.ts` → `model.ts`).
 
 ## 2. `mobilenetv2_gradcam.onnx` — Grad-CAM asli (opsional)
 - Input : sama seperti di atas.
@@ -31,3 +36,17 @@ pnpm add -D onnxruntime-node   # sekali, utk inspeksi lokal
 node scripts/inspect_model.cjs
 ```
 Harus menampilkan input `[1,224,224,3]` dan output probabilitas.
+
+## Preprocessing yang benar (selaras dengan notebook training `logmel_224`)
+Pipeline audio-ke-input dijalankan otomatis oleh website (`src/lib/audio.ts`):
+
+1. Decode audio (native rate) → mono.
+2. Band-pass 100–5000 Hz.
+3. Resample ke 16 kHz + peak normalization.
+4. Cough segmentation (window 1,5 detik, energi tertinggi).
+5. Log-Mel: `n_mels=64`, `fmin=100`, `fmax=8000`, `n_fft=2048`, `hop=512`.
+6. `power_to_db(ref=np.max)` → dB mentah (max = 0 dB).
+7. Resize bilinear ke 224×224 + duplikasi 3 channel (`src/lib/model.ts`).
+
+Jika hasil prediksi tampak tidak akurat, periksa bahwa preprocessing di atas
+konsisten dengan pipeline yang dipakai saat training model.
