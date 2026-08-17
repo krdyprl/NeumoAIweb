@@ -11,3 +11,4 @@ dump_file/
 # local training artifacts (bukan untuk website)
 model/
 *.ipynb
+Train Model NeumoAid/

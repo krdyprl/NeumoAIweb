@@ -48,6 +48,27 @@ function screening(id: string, patientId: string, date: string, symptoms: string
   return { id, patientId, date, symptoms, audioDuration, riskLevel, disease: "Pneumonia", confidence, status, outcome, vitals, modelVersion, trend }
 }
 
+// Pemetaan pasien mock -> file audio batuk (di public/audio/).
+// Dipakai agar tiap detail pasien punya audio nyata yang bisa diputar (bukan dummy).
+const AUDIO_BY_PATIENT: Record<string, string> = {
+  p1: "/audio/P1.mp3",
+  p2: "/audio/P2.mp3",
+  p3: "/audio/P3.mp3",
+  p4: "/audio/P4.mp3",
+  p5: "/audio/P5.mp3",
+  p6: "/audio/P6.mp3",
+  p7: "/audio/P7.mp3",
+  p8: "/audio/P8.mp3",
+  p9: "/audio/P9.mp3",
+  p10: "/audio/P10.mp3",
+  p11: "/audio/P11.mp3",
+  p12: "/audio/P12.mp3",
+}
+
+export function audioUrlForPatient(patientId: string): string | undefined {
+  return AUDIO_BY_PATIENT[patientId]
+}
+
 export const SCREENINGS_BY_PATIENT: Record<string, Screening[]> = {
   p1: [
     screening("s1", "p1", "2026-08-01T09:14:00", ["batuk", "demam", "sesak"], 5, "high", 87, "awaiting", { heartRate: 132, respiratoryRate: 46, spo2: 91, temperature: 38.6, weight: 13.2 }, "", [48, 55, 62, 71, 79, 87], "v2.4"),
@@ -68,6 +89,14 @@ export const SCREENINGS_BY_PATIENT: Record<string, Screening[]> = {
   p10: [screening("s13", "p10", "2026-07-05T08:15:00", ["demam", "sesak"], 4, "medium", 58, "done", { heartRate: 125, respiratoryRate: 34, spo2: 95, temperature: 38.0, weight: 11.8 }, "Tindak lanjut mandiri", [30, 36, 42, 48, 53, 58], "v2.3")],
   p11: [screening("s14", "p11", "2026-01-22T11:30:00", ["batuk", "demam"], 5, "medium", 52, "done", { heartRate: 121, respiratoryRate: 32, spo2: 96, temperature: 37.9, weight: 30.1 }, "Antibiotik", [28, 34, 40, 44, 49, 52], "v2.2")],
   p12: [screening("s15", "p12", "2026-08-04T08:45:00", ["batuk", "pilek"], 4, "low", 25, "awaiting", { heartRate: 110, respiratoryRate: 26, spo2: 97, temperature: 37.2, weight: 5.4 }, "", [16, 18, 20, 21, 23, 25], "v2.4")],
+}
+
+// Tempel audioUrl ke setiap screening pasien mock agar bisa diputar di detail.
+for (const [patientId, url] of Object.entries(AUDIO_BY_PATIENT)) {
+  const list = SCREENINGS_BY_PATIENT[patientId]
+  if (list) {
+    for (const s of list) s.audioUrl = url
+  }
 }
 
 function makeAiExplain(id: string, confidence: number): AiExplain {

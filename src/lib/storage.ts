@@ -41,6 +41,10 @@ export async function getAudioUrlOrPublic(
   expiresIn = 3600,
 ): Promise<string | null> {
   if (!pathOrUrl) return null
+  // Path lokal repo (public/audio/...): pakai langsung sebagai URL (bukan Supabase).
+  if (pathOrUrl.startsWith("/audio/")) return pathOrUrl
+  // URL penuh: pakai langsung.
   if (pathOrUrl.startsWith("http")) return pathOrUrl
+  // Path Supabase storage (childId/file): buat signed URL.
   return getAudioUrl(pathOrUrl, expiresIn)
 }
