@@ -172,31 +172,39 @@ Migration SQL sudah disediakan di `supabase/migrations/`.
 
 ### 6.2 Jalankan Migration Awal
 
-Buka **Supabase Dashboard > SQL Editor**, buka file `supabase/migrations/0001_init.sql`,
-salin isinya, tempel ke editor, lalu tekan **Run**.
+Buka **Supabase Dashboard > SQL Editor**, lalu jalankan skema berikut (urutan
+penting — lihat catatan di bawah):
 
-Migration ini membuat:
+- Jika **tabel `screenings` belum ada**, buat dari schema aplikasi Flutter
+  (`D:\NeumoAI-D\backend\supabase_schema.sql`) — skema ini menyediakan tabel
+  `screenings` + bucket `audio` public + RLS.
+- Jika tabel `screenings` **sudah ada**, jangan jalankan ulang `0001_init.sql`
+  (itu akan menimpa policy yang dipakai app Flutter).
 
-- Tabel `public.profiles` (profil dokter, terhubung ke `auth.users`) + RLS
-- Tabel `public.screenings` (hasil skrining pasien) + RLS
-- Index `screenings_child_id_idx` dan `screenings_date_idx`
+> `0001_init.sql` hanya menjadi referensi; dalam praktik schema yang dipakai
+> berasal dari aplikasi Flutter. Gunakan `0004_profiles_table.sql` untuk membuat
+> tabel `profiles` (yang tidak ada di schema Flutter) — lihat Bab 6.4.
 
 ### 6.3 Jalankan Migration Storage
 
 Ulangi langkah yang sama untuk `supabase/migrations/0002_bucket.sql`. Migration ini
-membuat bucket `audio` (private/restricted) beserta kebijakan RLS:
+membuat bucket `audio` beserta kebijakan RLS.
 
-- `audio_read_authenticated` — pengguna terautentikasi (dokter) dapat membaca audio
-- `audio_insert_authenticated` — pengguna terautentikasi dapat mengunggah audio
+> **Catatan bucket:** skema yang dijalankan dari aplikasi Flutter (`supabase_schema.sql`)
+> membuat bucket `audio` sebagai **public** agar app pasien bisa meng-upload anon dan
+> dokter bisa memutar langsung. Kode website (`src/lib/storage.ts`) sudah mendukung
+> **signed URL** (restricted). Untuk pengetatan nanti, ubah bucket jadi private dan
+> pakai policy authenticated — lihat `supabase/README.md`.
 
-> Jika Anda menggunakan **Supabase CLI**, kedua migration dapat dijalankan dengan
-> perintah `supabase db push` dari root project.
-
-### 6.4 Membuat Akun Dokter (Auth)
+### 6.4 Membuat Akun Dokter (Auth) + Profil
 
 Dokter login melalui Supabase Auth. Buat akun di **Supabase Dashboard >
-Authentication > Users > Add user**, atau melalui halaman login aplikasi (yang
-terhubung ke Auth) setelah dev server berjalan.
+Authentication > Users > Add user** (Auto Confirm: ON), lalu jalankan:
+
+1. `supabase/migrations/0004_profiles_table.sql` — membuat tabel `profiles` (jika
+   belum ada; schema Flutter tidak menyertakannya).
+2. `supabase/migrations/0003_doctor_profile.sql` — mengisi profil dokter
+   (ganti `<USER_ID>` dengan UUID akun dokter yang baru dibuat).
 
 ---
 
@@ -209,8 +217,23 @@ Grad-CAM dihitung di browser dengan model MobileNetV2 yang diekspor ke ONNX.
 3. Deploy ulang agar file ikut dalam build (file berada di `public/` sehingga
    otomatis tersalin ke `dist/`).
 
-Model diharapkan menerima input mel-spectrogram yang diratakan (1D `Float32Array`)
-sebagai tensor `[1, n]`, dengan output probabilitas 2 kelas: `[Normal, Pneumonia]`.
+### Spesifikasi model yang benar
+
+Model **bukan** menerima input 1D. Ia menerima **Log-Mel Spectrogram** yang sudah
+diselaraskan dengan pipeline training (`logmel_224`):
+
+- **Input tensor** : `[1, 224, 224, 3]` float32 (NHWC), 3 channel identik.
+- **Isi input**    : nilai **dB mentah** dengan `power_to_db(ref=np.max)`
+  (maksimum = 0 dB, sisanya negatif). Bukan dinormalisasi ke `[0,1]` dan bukan
+  di-ubah ke `[-1,1]` manual — `preprocess_input` ada di dalam graph model.
+- **Preprocessing** (dilakukan otomatis oleh `src/lib/audio.ts`):
+  1. Decode audio (native rate) → mono.
+  2. Band-pass 100–5000 Hz.
+  3. Resample ke 16 kHz + peak normalization.
+  4. Cough segmentation (window 1,5 detik, energi tertinggi).
+  5. Log-Mel: `n_mels=64`, `fmin=100`, `fmax=8000`, `n_fft=2048`, `hop=512`.
+  6. Resize bilinear ke 224×224 + duplikasi 3 channel (dilakukan `model.ts`).
+- **Output**       : `[1, 1]` sigmoid = probabilitas pneumonia (bukan 2 kelas).
 
 > Jika model belum tersedia, aplikasi memakai fallback placeholder sehingga tetap
 > berfungsi. Detail lebih lanjut ada di `public/models/README.md`.
@@ -357,7 +380,7 @@ npx serve dist
 | `VITE_SUPABASE_URL is undefined` | File `.env` tidak ada/berisi kosong. Salin `.env.example` ke `.env` dan isi nilai Supabase. Pastikan nama variabel berawalan `VITE_`. |
 | Login gagal / redirect loop | Cek konfigurasi Supabase Auth: `Site URL` dan `Redirect URLs` di Dashboard harus cocok dengan `http://localhost:5173`. |
 | Audio tidak bisa diputar | Pastikan migration `0002_bucket.sql` sudah dijalankan dan policy `audio_read_authenticated` aktif. |
-| Grad-CAM tidak muncul / error model | Cek `public/models/mobilenetv2.onnx` ada dan ukurannya wajar. Tanpa model, app memakai fallback. |
+| Grad-CAM tidak muncul / error model | Pastikan `public/models/mobilenetv2.onnx` ada dan utuh (≈8,9 MB, tidak terpotong). Jika muncul `Failed to load model because protobuf parsing failed`, lakukan hard-refresh (Ctrl+Shift+R); kode sudah memuat model sebagai Uint8Array/URL + wasm via CDN. Tanpa model, app memakai fallback. |
 | Port 5173 sudah terpakai | Ganti port: `PORT=3000 pnpm dev` |
 | `pnpm: command not found` | Install pnpm terlebih dahulu (Bab 2.3). |
 
