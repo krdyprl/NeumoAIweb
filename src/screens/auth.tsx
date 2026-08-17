@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useT } from "../i18n"
 import { Button, Field, Icon } from "../components/ui"
+import { signIn } from "../lib/auth"
 
 export function LoginScreen() {
   const navigate = useNavigate()
@@ -10,14 +11,22 @@ export function LoginScreen() {
   const [password, setPassword] = useState("")
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!email.trim() || !password.trim()) {
       setError(t("error_required"))
       return
     }
-    localStorage.setItem("neumod_session", JSON.stringify({ email, role: "dokter" }))
+    setError("")
+    setLoading(true)
+    const result = await signIn(email.trim(), password.trim())
+    setLoading(false)
+    if (result.error) {
+      setError(result.error)
+      return
+    }
     navigate("/dashboard", { replace: true })
   }
 
@@ -47,7 +56,7 @@ export function LoginScreen() {
             </div>
           </div>
           {error && <p className="text-[13px] font-semibold text-danger bg-danger-soft rounded-xl px-4 py-3">{error}</p>}
-          <Button type="submit" className="w-full">{t("btn.login")}</Button>
+          <Button type="submit" className="w-full" disabled={loading}>{loading ? "…" : t("btn.login")}</Button>
           <p className="text-center text-[12px] text-faint">{t("demo_note")}</p>
         </div>
       </form>

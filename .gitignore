@@ -1,7 +1,12 @@
 node_modules/
 dist/
 *.local
+.env
+.env.local
+.env.production
 # internal agent artifacts
 .superpowers/
 # old archive / dump
 dump_file/
+# local training artifacts (bukan untuk website)
+model/

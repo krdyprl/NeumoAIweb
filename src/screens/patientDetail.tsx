@@ -1,10 +1,13 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { PATIENTS, SCREENINGS_BY_PATIENT, AI_EXPLAIN } from "../data/doctorMock"
+import { PATIENTS, AI_EXPLAIN } from "../data/doctorMock"
+import { useApp } from "../state/AppContext"
 import { useT } from "../i18n"
 import { RiskBadge, EmptyState } from "../components/dashboard"
 import { MelSpectrogram, GradCam, ShapBars, WaveformPlayer } from "../components/charts"
 import { Button, Card, Chip, Avatar, Icon, Segmented, Sparkline } from "../components/ui"
+import { AudioAnalyzer } from "../components/AudioAnalyzer"
+import { getAudioUrlOrPublic } from "../lib/storage"
 
 type TabValue = "history" | "ai" | "medical" | "vitals"
 
@@ -12,6 +15,7 @@ export function PatientDetailScreen() {
   const { id } = useParams()
   const navigate = useNavigate()
   const t = useT()
+  const { screeningsByPatient } = useApp()
   const [tab, setTab] = useState<TabValue>("ai")
 
   const TABS: { value: TabValue; label: string }[] = [
@@ -26,9 +30,23 @@ export function PatientDetailScreen() {
     return <div className="p-6 max-w-[1280px] mx-auto"><EmptyState icon="🙁" title={t("empty.patient_not_found")} desc={t("empty.patient_not_found_desc")} /></div>
   }
 
-  const screenings = SCREENINGS_BY_PATIENT[patient.id] ?? []
+  const screenings = screeningsByPatient[patient.id] ?? []
   const latest = screenings[0]
   const explain = AI_EXPLAIN[patient.id]
+  const [audioSrc, setAudioSrc] = useState<string | undefined>(undefined)
+
+  useEffect(() => {
+    let cancelled = false
+    setAudioSrc(undefined)
+    if (latest?.audioUrl) {
+      getAudioUrlOrPublic(latest.audioUrl).then((url) => {
+        if (!cancelled && url) setAudioSrc(url)
+      })
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [latest?.audioUrl, latest?.id])
   const birth = new Date(patient.birthDate)
   const ageY = new Date().getFullYear() - birth.getFullYear()
 
@@ -140,7 +158,7 @@ export function PatientDetailScreen() {
                     <h2 className="text-[16px] font-bold text-ink mb-4">{t("ai_reasoning")}</h2>
                     <ul className="space-y-2">{explain.reasoning.map((r, i) => (<li key={i} className="flex gap-2 text-[14px] text-muted"><Icon name="check" className="w-4 h-4 text-secondary shrink-0" />{r}</li>))}</ul>
                   </Card>
-                  <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("ai_playback")}</h2><WaveformPlayer duration={latest.audioDuration} /></Card>
+                  <Card className="p-6"><h2 className="text-[16px] font-bold text-ink mb-4">{t("ai_playback")}</h2><WaveformPlayer duration={latest.audioDuration} src={audioSrc} /></Card>
                   <Card className="p-6">
                     <h2 className="text-[16px] font-bold text-ink mb-1">{t("ai.timeline")}</h2>
                     <p className="text-[13px] text-muted mb-4">{t("ai.timeline_desc")}</p>
@@ -159,6 +177,7 @@ export function PatientDetailScreen() {
           ) : (
             <Card><EmptyState icon="📊" title={t("empty.no_ai_screening")} desc={t("empty.no_ai_screening_desc")} /></Card>
           )}
+          <AudioAnalyzer patientId={patient.id} />
         </div>
       )}
 

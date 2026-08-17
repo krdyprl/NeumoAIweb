@@ -1,23 +1,25 @@
 import { useNavigate } from "react-router-dom"
 import { useApp } from "../state/AppContext"
-import { PATIENTS, SCREENINGS_BY_PATIENT, WEEKLY_SCREENINGS, RISK_DISTRIBUTION, ACTIVITIES, TASKS } from "../data/doctorMock"
+import { PATIENTS, WEEKLY_SCREENINGS, RISK_DISTRIBUTION, ACTIVITIES, TASKS } from "../data/doctorMock"
 import { useT } from "../i18n"
 import { StatCard, PageHeader, RiskBadge } from "../components/dashboard"
 import { AreaChart, DonutChart } from "../components/charts"
 import { Button, Card, Icon } from "../components/ui"
 
 export function DashboardScreen() {
-  const { doctor, decisionCases, pendingCases, lang } = useApp()
+  const { doctor, decisionCases, pendingCases, lang, liveScreenings, screeningsByPatient } = useApp()
   const t = useT()
   const navigate = useNavigate()
   const hour = new Date().getHours()
   const greet = hour < 11 ? t("greet_morning") : hour < 15 ? t("greet_afternoon") : hour < 18 ? t("greet_evening") : t("greet_night")
-  const totalPatients = PATIENTS.length
-  const todayScreening = SCREENINGS_BY_PATIENT.p1.length + SCREENINGS_BY_PATIENT.p3.length + SCREENINGS_BY_PATIENT.p5.length
+  const totalPatients = PATIENTS.length + new Set(liveScreenings.map((s) => s.patientId)).size
+  const todayScreening = liveScreenings.length > 0
+    ? liveScreenings.filter((s) => new Date(s.date).toDateString() === new Date().toDateString()).length
+    : (screeningsByPatient.p1?.length ?? 0) + (screeningsByPatient.p3?.length ?? 0) + (screeningsByPatient.p5?.length ?? 0)
   const highRisk = decisionCases.filter((s) => s.riskLevel === "high").length
   const pendingList = decisionCases.slice(0, 3)
   const accuracy = Math.round(decisionCases.reduce((s, c) => s + c.confidence, 0) / Math.max(decisionCases.length, 1))
-  const allConfidence = Object.values(SCREENINGS_BY_PATIENT).flat().map((s) => s.confidence)
+  const allConfidence = Object.values(screeningsByPatient).flat().map((s) => s.confidence)
 
   return (
     <div className="p-6 max-w-[1280px] mx-auto anim-fade-up">
@@ -65,11 +67,12 @@ export function DashboardScreen() {
             <div className="space-y-3">
               {pendingList.map((s) => {
                 const patient = PATIENTS.find((p) => p.id === s.patientId)
+                const name = patient?.name ?? s.patientName ?? s.patientId
                 return (
-                  <button key={s.id} onClick={() => navigate(`/patients/${patient?.id}`)} className="w-full text-left flex items-center gap-3 p-3 rounded-2xl bg-surface-2 hover:bg-primary-soft transition-colors cursor-pointer">
+                  <button key={s.id} onClick={() => navigate(`/patients/${patient?.id ?? s.patientId}`)} className="w-full text-left flex items-center gap-3 p-3 rounded-2xl bg-surface-2 hover:bg-primary-soft transition-colors cursor-pointer">
                     <RiskBadge level={s.riskLevel} />
                     <span className="flex-1 min-w-0">
-                      <span className="block text-[14px] font-bold text-ink truncate">{patient?.name}</span>
+                      <span className="block text-[14px] font-bold text-ink truncate">{name}</span>
                       <span className="block text-[12px] text-muted truncate">{s.disease} · {s.confidence}%</span>
                     </span>
                     <Icon name="chevron" className="w-4 h-4 text-faint" />

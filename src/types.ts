@@ -48,6 +48,8 @@ export interface Screening {
   vitals: Vitals
   modelVersion: string
   trend: number[]
+  audioUrl?: string
+  patientName?: string
 }
 
 export interface Activity {

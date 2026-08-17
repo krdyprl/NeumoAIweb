@@ -41,12 +41,13 @@ export function DecisionsScreen() {
         <div className="space-y-4">
           {decisionCases.map((s) => {
             const patient = PATIENTS.find((p) => p.id === s.patientId)
+            const name = patient?.name ?? s.patientName ?? s.patientId
             return (
               <Card key={s.id} className="p-5">
                 <div className="flex flex-wrap items-center gap-4">
                   <Avatar emoji={patient?.gender === "male" ? "👦" : "👧"} size={44} />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2"><p className="text-[15px] font-bold text-ink">{patient?.name}</p><RiskBadge level={s.riskLevel} /></div>
+                    <div className="flex items-center gap-2"><p className="text-[15px] font-bold text-ink">{name}</p><RiskBadge level={s.riskLevel} /></div>
                     <p className="text-[13px] text-muted mt-0.5">{s.disease} · Confidence {s.confidence}% · {s.modelVersion}</p>
                     <p className="text-[13px] text-muted">{new Date(s.date).toLocaleDateString(lang === "en" ? "en-US" : "id-ID")} · {s.audioDuration} {t("sec")} · {t("symptoms")}: {s.symptoms.join(", ")}</p>
                     <div className="flex flex-wrap gap-3 mt-3 text-[12px] text-muted">

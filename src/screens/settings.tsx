@@ -4,6 +4,7 @@ import { useApp } from "../state/AppContext"
 import { useT } from "../i18n"
 import { PageHeader } from "../components/dashboard"
 import { Button, Card, Field, Icon, Segmented, Avatar } from "../components/ui"
+import { signOut } from "../lib/auth"
 import type { Lang, ThemeMode } from "../types"
 
 export function SettingsScreen() {
@@ -22,7 +23,7 @@ export function SettingsScreen() {
   }
 
   function logout() {
-    localStorage.removeItem("neumod_session")
+    signOut()
     navigate("/login", { replace: true })
   }
 

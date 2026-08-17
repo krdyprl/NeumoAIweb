@@ -242,10 +242,11 @@ export function ShapBars({ data }: { data: { feature: string; contribution: numb
   )
 }
 
-export function WaveformPlayer({ duration }: { duration: number }) {
+export function WaveformPlayer({ duration, src }: { duration: number; src?: string }) {
   const [playing, setPlaying] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const timerRef = useRef<number | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
     if (!playing) return
@@ -263,13 +264,37 @@ export function WaveformPlayer({ duration }: { duration: number }) {
     }
   }, [playing, duration])
 
+  useEffect(() => {
+    if (!src) return
+    const audio = new Audio(src)
+    audioRef.current = audio
+    return () => {
+      audio.pause()
+      audioRef.current = null
+    }
+  }, [src])
+
+  function toggle() {
+    const audio = audioRef.current
+    if (playing) {
+      setPlaying(false)
+      audio?.pause()
+      return
+    }
+    if (audio) {
+      audio.currentTime = 0
+      void audio.play().catch(() => {})
+    }
+    setPlaying(true)
+  }
+
   const progress = Math.min(elapsed / duration, 1)
   const bars = 28
   return (
     <div>
       <div className="flex items-center gap-4 p-4 bg-surface-2 rounded-2xl">
         <button
-          onClick={() => setPlaying((p) => !p)}
+          onClick={toggle}
           aria-label={playing ? "Jeda" : "Putar suara"}
           className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center cursor-pointer shrink-0 shadow-[0_6px_16px_rgba(29,122,252,0.3)]"
         >

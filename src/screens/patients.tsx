@@ -1,14 +1,29 @@
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useApp } from "../state/AppContext"
-import { PATIENTS, SCREENINGS_BY_PATIENT } from "../data/doctorMock"
+import { PATIENTS } from "../data/doctorMock"
 import { useT } from "../i18n"
 import { PageHeader, SearchBar, FilterChips, RiskBadge, EmptyState } from "../components/dashboard"
 import { Card, Avatar, Icon, Sparkline } from "../components/ui"
+import type { Patient, Screening } from "../types"
+
+function toPatient(s: Screening): Patient | null {
+  if (!s.patientName) return null
+  return {
+    id: s.patientId,
+    name: s.patientName,
+    nik: s.patientId,
+    gender: "female",
+    birthDate: "",
+    address: "",
+    phone: "",
+    facility: "",
+  }
+}
 
 export function PatientsScreen() {
   const navigate = useNavigate()
-  const { lang } = useApp()
+  const { lang, screeningsByPatient } = useApp()
   const t = useT()
   const [query, setQuery] = useState("")
   const [filter, setFilter] = useState(() => t("filter.all"))
@@ -20,7 +35,13 @@ export function PatientsScreen() {
   }, [lang])
 
   const rows = useMemo(() => {
-    return PATIENTS.map((p) => ({ patient: p, latest: (SCREENINGS_BY_PATIENT[p.id] ?? [])[0] })).filter(({ patient, latest }) => {
+    const mockRows = PATIENTS.map((p) => ({ patient: p, latest: (screeningsByPatient[p.id] ?? [])[0] }))
+    const liveRows = Object.values(screeningsByPatient)
+      .flat()
+      .filter((s) => s.patientName && !PATIENTS.some((p) => p.id === s.patientId))
+      .map((s) => ({ patient: toPatient(s)!, latest: s }))
+    const all = [...mockRows, ...liveRows]
+    return all.filter(({ patient, latest }) => {
       const q = query.toLowerCase()
       if (q && !patient.name.toLowerCase().includes(q) && !patient.nik.includes(q)) return false
       if (filter === t("filter.all")) return true
@@ -29,11 +50,11 @@ export function PatientsScreen() {
       if (filter === t("filter.medium")) return latest?.riskLevel === "medium"
       return latest?.riskLevel === "high"
     })
-  }, [query, filter, t])
+  }, [query, filter, t, screeningsByPatient])
 
   return (
     <div className="p-6 max-w-[1280px] mx-auto anim-fade-up">
-      <PageHeader title={t("page.patients")} subtitle={`${PATIENTS.length} ${t("patients_subtitle")}`} />
+      <PageHeader title={t("page.patients")} subtitle={`${rows.length} ${t("patients_subtitle")}`} />
       <div className="flex flex-col md:flex-row gap-3 mb-5">
         <SearchBar value={query} onChange={setQuery} placeholder={t("search_placeholder")} />
         <FilterChips options={FILTERS} value={filter} onChange={setFilter} />
